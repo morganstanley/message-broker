@@ -1,0 +1,6 @@
+{
+    "excludeExternals": true,
+    "excludePrivate": true,
+    "out": "docs",
+    "exclude": ["**/*+(.spec|.e2e).ts"]
+}

@@ -1,0 +1,9 @@
+node_modules/
+dist/
+reports/
+docs/
+reports/
+*.tgz
+npm-debug.log
+npm
+package-lock.json

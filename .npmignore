@@ -1,0 +1,31 @@
+node_modules/
+scripts/
+spec/
+reports/
+dist/spec/
+.vscode/
+.github/**/*
+
+karma.conf.js
+karma.base.conf.js
+prettier.config.js
+.eslintrc.js
+.travis.yml
+codecov.yml
+CONTRIBUTING.md
+tsconfig.json
+typedoc.json
+
+*.tgz
+
+# ignore main
+
+main/**/*
+spec/**/*
+.github/**/*
+dco/**/*
+docs/**/*
+
+# except for ts files (required for source maps)
+
+!main/**/*.ts
