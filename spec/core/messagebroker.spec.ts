@@ -175,7 +175,9 @@ describe('MessageBroker', () => {
 
     describe('Typing', () => {
         it('should return a typed push function', () => {
-            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>(mockRSVPMediator.mock);
+            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>(
+                mockRSVPMediator.mock,
+            );
 
             const stringChannel = messageBroker.create('channelOne');
             const numberChannel = messageBroker.create('channelTwo');
@@ -187,7 +189,9 @@ describe('MessageBroker', () => {
         });
 
         it('should return a typed channel', () => {
-            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>(mockRSVPMediator.mock);
+            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>(
+                mockRSVPMediator.mock,
+            );
 
             const stringChannel = messageBroker.get('channelOne');
             const numberChannel = messageBroker.get('channelTwo');
