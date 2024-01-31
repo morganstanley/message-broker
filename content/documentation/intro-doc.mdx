@@ -1,0 +1,61 @@
+---
+order: 1
+title: Development
+---
+
+### Quick Start
+
+Install the latest version of [Node.js](https://nodejs.org/en), clone this repo and then:
+
+```bash
+cd ms-gh-pages/site
+npm install
+npm run start
+```
+
+To create a build locally:
+
+```bash
+npm run build
+```
+
+### Configuration
+
+This static site generator is powered by GatsbyJS.
+
+The basic configurations are set in `gatsby-config.js`. The important configuration options are
+
+```javascript
+  siteMetadata: {
+    title: `Morgan Stanley Open Source Software`,
+    description: `Morgan Stanley Open Source Software`,
+    siteUrl: 'http://opensource.morganstanley.com',
+    documentationUrl: 'url.documentation.site' | false,
+  }
+```
+
+More information about GatsbyJS configuration can be found [here](https://www.gatsbyjs.com/docs/reference/config-files/gatsby-config/#sitemetadata).
+
+#### Documentation link to external site
+
+By default, this static website builder will point documentation to the files built from the `content/documentation` directory.
+
+If the project docs are hosted elsewhere (eg: readthedocs.io), add the url to the `documentationUrl` attribute in the `siteMetadata` in the `gatsby-config.js`.
+
+### Updates
+
+### Customization
+
+#### Plugins
+
+Default plugins are included as a module in `/config/base-gatsby-plugins`, which outputs `plugins`,`gatsbyPluginMdx`, `gatsbyRemarkPlugins`.
+
+```javascript
+const { plugins } = require('./src/config/base-gatsby-plugins'); // default plugins
+
+module.exports = {
+  siteMetadata: {...},
+  pathPrefix: `/`, // include subdirectory
+  plugins,
+};
+```

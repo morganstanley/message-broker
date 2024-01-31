@@ -1,85 +1,49 @@
 {
-    "name": "@morgan-stanley/message-broker",
-    "version": "1.0.0",
-    "description": "Framework agnostic messagebroker for decoupled communication.",
-    "main": "dist/main/index.js",
-    "types": "dist/main/index.d.ts",
-    "author": "Morgan Stanley",
-    "license": "Apache-2.0",
-    "keywords": [
-        "messagebroker",
-        "communication",
-        "event",
-        "morgan stanley"
-    ],
-    "scripts": {
-        "clean": "rimraf ./dist ./coverage ../install ../build ../packages ./reports",
-        "copy-definitions-to-dist": "copyfiles -u 1 \"./main/**/*.d.ts\" ./dist",
-        "test": "karma start --singleRun --browsers ChromeHeadlessNoSandbox",
-        "posttest": "npm run lint",
-        "lint": "eslint -c .eslintrc.js --ext .ts,.js .",
-        "lint-fix": "eslint -c .eslintrc.js --ext .ts,.js . --fix",
-        "watch-test": "karma start",
-        "watch-build": "tsc --watch",
-        "build-tsc": "tsc -p tsconfig.json",
-        "build": "npm run build-tsc && npm run copy-definitions-to-dist && typedoc main/index.ts",
-        "prebuild-release": "npm run clean",
-        "build-release": "npm run build"
-    },
-    "repository": {
-        "type": "git"
-    },
-    "peerDependencies": {
-        "rxjs": "^7.8.1"
-    },
-    "devDependencies": {
-        "@jsdevtools/coverage-istanbul-loader": "^3.0.5",
-        "@morgan-stanley/ts-mocking-bird": "^1.1.3",
-        "@types/jasmine": "^5.1.4",
-        "@types/node": "^20.9.4",
-        "@types/uuid": "^9.0.7",
-        "@typescript-eslint/eslint-plugin": "^6.12.0",
-        "@typescript-eslint/parser": "^6.12.0",
-        "acorn": "^8.7.0",
-        "ajv": "^8.12.0",
-        "chromedriver": "^121.0.0",
-        "circular-dependency-plugin": "^5.2.2",
-        "concurrently": "^8.2.2",
-        "copyfiles": "^2.4.1",
-        "core-js": "^3.15.2",
-        "eslint": "^7.32.0",
-        "eslint-config-prettier": "^9.1.0",
-        "eslint-plugin-import": "^2.24.2",
-        "eslint-plugin-prefer-arrow": "^1.2.3",
-        "eslint-plugin-prettier": "^4.0.0",
-        "eslint-plugin-simple-import-sort": "^10.0.0",
-        "event-hooks-webpack-plugin": "^2.2.0",
-        "istanbul-instrumenter-loader": "^2.0.0",
-        "jasmine": "^4.6.0",
-        "jasmine-core": "^3.8.0",
-        "karma": "^6.3.4",
-        "karma-chrome-launcher": "^3.1.0",
-        "karma-coverage": "^2.0.3",
-        "karma-coverage-istanbul-reporter": "^3.0.3",
-        "karma-ie-launcher": "^1.0.0",
-        "karma-jasmine": "^5.1.0",
-        "karma-jasmine-html-reporter": "^1.7.0",
-        "karma-junit-reporter": "^2.0.1",
-        "karma-webpack": "^5.0.0",
-        "prettier": "^2.4.1",
-        "puppeteer": "^21.5.2",
-        "reflect-metadata": "^0.1.13",
-        "rimraf": "^5.0.5",
-        "rxjs": "^7.8.1",
-        "source-map": "^0.7.4",
-        "ts-loader": "^9.2.3",
-        "tsconfig-paths-webpack-plugin": "^4.1.0",
-        "typedoc": "^0.25.3",
-        "typescript": "^5.2.2",
-        "webpack": "^5.44.0"
-    },
-    "dependencies": {
-        "@morgan-stanley/needle": "^0.3.13",
-        "uuid": "^9.0.1"
-    }
+  "name": "ms-gh-pages",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ms-gh-pages",
+  "author": "Morgan Stanley",
+  "keywords": [
+    "gatsby"
+  ],
+  "engines": {
+    "node": "^18.14.0",
+    "npm": "^9.3.1"
+  },
+  "dependencies": {
+    "@mdx-js/react": "^2.3.0",
+    "gatsby": "^5.11.0",
+    "gatsby-plugin-image": "^3.11.0",
+    "gatsby-plugin-manifest": "^5.11.0",
+    "gatsby-plugin-mdx": "^5.11.0",
+    "gatsby-plugin-react-helmet": "^6.11.0",
+    "gatsby-plugin-sharp": "^5.11.0",
+    "gatsby-plugin-sitemap": "^6.11.0",
+    "gatsby-plugin-webfonts": "^2.3.2",
+    "gatsby-remark-autolink-headers": "^6.11.0",
+    "gatsby-remark-copy-linked-files": "^6.11.0",
+    "gatsby-remark-images": "^7.11.0",
+    "gatsby-remark-prismjs": "^7.11.0",
+    "gatsby-remark-responsive-iframe": "^6.11.1",
+    "gatsby-remark-smartypants": "^6.11.0",
+    "gatsby-source-filesystem": "^5.11.0",
+    "gatsby-transformer-sharp": "^5.11.0",
+    "prismjs": "^1.29.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-helmet": "^6.1.0",
+    "style-to-object": "^0.4.2"
+  },
+  "scripts": {
+    "develop": "gatsby develop -H 0.0.0.0",
+    "start": "gatsby develop -H 0.0.0.0",
+    "build": "gatsby clean && gatsby build && npm run pub",
+    "serve": "gatsby serve",
+    "pub": "rm -rf ../docs && mv public ../docs",
+    "clean": "gatsby clean"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.8"
+  }
 }
