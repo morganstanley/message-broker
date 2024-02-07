@@ -5,18 +5,22 @@ title: Development
 
 ### Quick Start
 
-Install the latest version of [Node.js](https://nodejs.org/en), clone this repo and then:
+To install the messagebroker into your project, run the following command:
 
 ```bash
-cd ms-gh-pages/site
-npm install
-npm run start
+npm install @morganstanley/message-broker
 ```
 
-To create a build locally:
+To get an instance of the messagebroker:
 
-```bash
-npm run build
+```typescript
+import 'messagebroker' from '@morganstanley/message-broker';
+
+interface IContract {
+  'myChannel': string
+}
+
+const messagebroker = messagebroker<IContract>();
 ```
 
 ### Configuration
