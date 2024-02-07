@@ -1,8 +1,8 @@
 {
-  "name": "ms-gh-pages",
+  "name": "message-broker-gh-pages",
   "version": "1.0.0",
   "private": true,
-  "description": "ms-gh-pages",
+  "description": "GitHub Pages for the MessageBroker project",
   "author": "Morgan Stanley",
   "keywords": [
     "gatsby"
