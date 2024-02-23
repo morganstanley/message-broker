@@ -1,0 +1,64 @@
+---
+order: 4
+title: RSVP
+---
+
+The RSVP methods allow developers to define a request/response model using the messagebroker.
+Unlike a normal publish, publishing on an RSVP channel is a synchronous call that will ask all subscribers to respond with some value.
+
+An RSVP message must be sent on a special RSVP channel.
+In order to create on of those, you should extend the IRSVPConfig interface in your Contract interface, which will require you to specify an `rsvp` section.
+In this section, you can provide a channel name as usual, and it must have a `payload` and `response` section in it.
+
+```typescript
+interface IContract extends IRSVPConfig {
+    nonRSVPChannel : string;
+    rsvp: {
+        myRSVPChannel: {
+            payload: { data: string };
+            response: number;
+        };
+    };
+}
+```
+
+With your contract defined, you can now publish a message.
+
+Remember, this call will be *synchronous*, so it will block until all the subscribers have completed their work and returned a value.
+
+When all return values have been gathered, they will be returned by the rsvp method.
+
+```typescript
+const results: number[] = messagebroker<IMessageChannels>()
+                            .rsvp('myRSVPChannel', { data: 'abcde'});
+```
+
+### Respond
+
+Subscribing to an RSVP channel looks much the same as publishing, with the key difference being that the second parameter is a **function** rather than an object.
+This function must take a parameter of the type that matches the `payload` type in your contract.
+It must then return a value which is of the same type as the `response` type in your contract.
+
+```typescript
+messagebroker<IMessageChannels>()
+    .rsvp('myRSVPChannel', payload => {
+        // Perform some work on payload
+        return len(payload.data);
+    }
+);
+```
+
+### Respond with manual disconnect
+
+If for some reason you would like to stop responding to RSVP messages on a certain channel, the `rsvp` function returns a responder handler which has a `disconnect` method on it.
+Calling this method will prevent any further messages being received.
+
+```typescript
+const responder = messagebroker<IMessageChannels>()
+                    .rsvp('myRSVPChannel', payload => {
+                        return payload.data.split('');
+                    });
+
+// Manually disconnect the responder to avoid handling further rsvp requests.
+responder.disconnect();
+```
