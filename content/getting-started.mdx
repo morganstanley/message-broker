@@ -3,12 +3,23 @@ description: Quick start guide
 title: Getting Started
 ---
 
-Quick start guide
-
 ```bash
-cd site
-npm install
-npm run start
+npm install @morganstanley/message-broker
+```
+
+```Typescript
+import { messagebroker, TypedMessageBroker } from '@morganstanley/message-broker'
+
+interface IContracts {
+    myChannel: {
+        payload: string
+    }
+}
+
+const messagebroker: TypedMessageBroker<IContracts> = messagebroker<IContracts>();
+
+messagebroker.get('myChannel').subscribe(message => console.log(message.payload));
+messagebroker.create('myChannel').publish({ payload: 'My first message using the MessageBroker!' });
 ```
 
 Update the appropriate files located in the `site/content` directory. For instance, to change this 'Getting Started' text, update the `site/content/getting-started.mdx`.
