@@ -4,12 +4,19 @@ description: Description of a simple but comprehensive use case for the
 title: Use cases
 ---
 
-Description of a simple but comprehensive use case for the project.
+Here is an example of a usecase in which the Message Broker could be useful.
 
-#### Open Source Project Marketing Site
+#### Notification system
 
-A Morgan Stanley Open Source project should use this template for the project marketing site in most cases.
+Let's say you have some document uploading functionality in your UI.
+The uploading may take up to a minute and you don't want the user to have to wait, so once the upload is complete you want to have a pop-up notification appear which tells the user that their upload was successful.
 
-#### opensource.morganstanley.com
+The code for your pop-up notification can live anywhere in your codebase, and can "listen" for a "document_uploaded" message using the MessageBroker.
+Now all that needs to happen is for the document upload service to publish that message when the upload completes.
 
-External facing marketing site highlighting the Firm's open source initiatives.
+**Note:** that with this model, our document uploading service doesn't even have to know about the existence of the notification service, so everything is nice and decoupled.
+
+#### Mediator Pattern
+
+More generically, the Message Broker essentially acts as a [Mediator](https://refactoring.guru/design-patterns/mediator) for your components.
+Any time you would apply the Mediator pattern, the Message Broker is the perfect solution to avoid you some boilerplate coding.
