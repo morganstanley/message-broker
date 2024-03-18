@@ -3,7 +3,7 @@ order: 1
 title: Development
 ---
 
-### Prerequisites
+## Prerequisites
 
 You must use Typescript version: >3.4
 
@@ -19,7 +19,7 @@ Therefore you must enable `experimentalDecorators` and `emitDecoratorMetadata`.
 }
 ```
 
-#### Polyfills
+### Polyfills
 
 This library will work with modern browsers and JavaScript run-times without the need for polyfills, however if targeting older browsers you will need to provide a polyfill for the following types:
 
@@ -38,25 +38,11 @@ And you should import this module at the root of your application.
 import "reflect-metadata";
 ```
 
-### Quick Start
+## Quick Start
 
-To install the messagebroker into your project, run the following command:
+import GettingStarted from '../getting-started.mdx';
 
-```bash
-npm install @morganstanley/message-broker
-```
-
-To get an instance of the messagebroker:
-
-```typescript
-import 'messagebroker' from '@morganstanley/message-broker';
-
-interface IContract {
-  'myChannel': string
-}
-
-const messagebroker = messagebroker<IContract>();
-```
+<GettingStarted />
 
 ## Dependency Injection
 
