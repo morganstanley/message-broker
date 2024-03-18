@@ -4,7 +4,7 @@ import { Link, graphql } from 'gatsby';
 import Layout from '../../components/layout';
 import Seo from '../../components/seo';
 
-import DocumentationHero from '../../../content/documentation-hero.mdx';
+import HeroContent from '../../../content/hero.mdx';
 
 const DocumentationIndex = ({ data, location }) => {
   const docs = data.allMdx.nodes;
@@ -12,7 +12,7 @@ const DocumentationIndex = ({ data, location }) => {
   return (
     <Layout data={data} location={location}>
       <div className="main docs-main">
-        <DocumentationHero />
+        <HeroContent />
         {docs.map((node) => {
           const title = node.frontmatter.title;
           const toc = node.tableOfContents.items;

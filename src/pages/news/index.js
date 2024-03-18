@@ -4,7 +4,7 @@ import { Link, graphql } from 'gatsby';
 import Layout from '../../components/layout';
 import Seo from '../../components/seo';
 
-import NewsHero from '../../../content/news-hero.mdx';
+import HeroContent from '../../../content/hero.mdx';
 
 const NewsIndex = ({ data, location }) => {
   const news = data.allMdx.nodes;
@@ -12,7 +12,7 @@ const NewsIndex = ({ data, location }) => {
   return (
     <Layout data={data} location={location}>
       <div className="main news-main">
-        <NewsHero />
+        <HeroContent />
         <Seo title="News" />
         {news.map((node) => {
           const title = node.frontmatter.title;

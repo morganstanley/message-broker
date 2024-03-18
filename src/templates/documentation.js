@@ -8,10 +8,14 @@ const DocumentationTemplate = ({ children, data, pageContext, location }) => {
   const docs = data.allMdx.nodes;
   const toc = data.mdx.tableOfContents.items;
   const pageTitle = pageContext.frontmatter.title;
+  const siteTitle = data.site?.siteMetadata?.title;
 
   return (
     <Layout data={data} location={location}>
       <Seo title={pageTitle} description={pageContext.description} />
+      <article className="page-main content">
+        <h3>{siteTitle}</h3>
+      </article>
       <article className="page-main content documentation-main">
         <nav className="nav documentation-nav">
           <h4>Documentation</h4>
