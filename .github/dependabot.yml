@@ -5,13 +5,20 @@
 
 version: 2
 updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
+  - package-ecosystem: npm
+    directory: /site
     schedule:
-      interval: "weekly"
-      
-  # Maintain dependencies for GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
+      interval: "monthly"
+    groups:
+      gatsby:
+        patterns:
+          - "gatsby*"
+
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: "weekly"  
+      interval: "monthly"
+    groups:
+      artifact-actions:
+        patterns:
+          - "actions/*-artifact*" # Upload/Download usually need to be updated together

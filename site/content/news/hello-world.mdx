@@ -1,0 +1,71 @@
+---
+date: 2023-07-13
+title: A wild branded website template appears!
+---
+
+hello world
+
+> this is a blockquote
+
+```javascript{numberLines: true}
+if (node.internal.type === `allMdx`) {
+  const value = createFilePath({ node, getNode });
+  createNodeField({
+    name: `slug`,
+    node,
+    value,
+  });
+}
+```
+
+```jsx
+import React from 'react';
+
+import Header from './header';
+import Seo from './seo';
+
+function Layout({ location, title, children }) {
+  return (
+    <>
+      <Seo title="Open Source" />
+      <header className="header-main">
+        <Header location={location} />
+      </header>
+      <main className="body-main">{children}</main>
+      <footer className="footer-main">
+        <div className="content">
+          Please feel free to contribute via{' '}
+          <a
+            href="https://github.com/MorganStanley/"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Github
+          </a>
+          .
+        </div>
+      </footer>
+    </>
+  );
+}
+
+export default Layout;
+```
+
+```python
+import json
+from datetime import datetime
+from datetime import timedelta
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+plt.close('all')
+plt.xkcd()
+
+states = pd.read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-states.csv')
+
+us = pd.read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/us.csv')
+
+us.plot(x='date', y='cases', kind='bar', title='United States Confirmed Cases', figsize=(30,10))
+us.plot(x='date', y='deaths', kind='bar', title='United States Deaths', figsize=(30,10))
+```
