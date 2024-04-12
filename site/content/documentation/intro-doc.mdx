@@ -1,0 +1,51 @@
+---
+order: 1
+title: Development
+---
+
+## Prerequisites
+
+You must use Typescript version: >3.4
+
+The library depends on TypeScript's support for decorators.
+Therefore you must enable `experimentalDecorators` and `emitDecoratorMetadata`.
+
+```typescript
+{
+    "compilerOptions": {
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true
+    }
+}
+```
+
+### Polyfills
+
+This library will work with modern browsers and JavaScript run-times without the need for polyfills, however if targeting older browsers you will need to provide a polyfill for the following types:
+
+- Map. Read about the Map type [here](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map).
+
+This library also makes use of the `reflect-metadata` API for performing runtime introspection.
+Most browsers will not support this therefore you must install this yourself.
+
+```bash
+npm install reflect-metadata
+```
+
+And you should import this module at the root of your application.
+
+```typescript
+import "reflect-metadata";
+```
+
+## Quick Start
+
+import GettingStarted from '../getting-started.mdx';
+
+<GettingStarted />
+
+## Dependency Injection
+
+The MessageBroker class is decorated with @Injectable from @morgan-stanley/needle.
+This means that it can be constructed by different DI frameworks.
+For more information please refer to the [documentation for the Needle framework](https://github.com/morganstanley/needle).
