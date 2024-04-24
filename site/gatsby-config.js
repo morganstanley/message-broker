@@ -2,12 +2,12 @@ const { plugins } = require('./src/config/base-gatsby-plugins');
 
 module.exports = {
   siteMetadata: {
-    title: `Morgan Stanley Open Source Software`,
-    description: `Morgan Stanley Open Source Software`,
-    siteUrl: 'http://opensource.morganstanley.com',
+    title: `Message Broker`,
+    description: `The Message Broker is a Typescript library which aims to provide asynchronous communication between typescript components.`,
+    siteUrl: 'http://opensource.morganstanley.com/message-broker',
     documentationUrl: false,
     //  documentationUrl: url-of.documentation.site,
   },
-  pathPrefix: `/`, // include subdirectory
+  pathPrefix: `/message-broker`, // include subdirectory
   plugins,
 };
