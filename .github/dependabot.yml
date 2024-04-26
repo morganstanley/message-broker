@@ -15,3 +15,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"  
+
+  - package-ecosystem: npm
+     directory: /site
+     schedule:
+       interval: "monthly"
+     groups:
+       gatsby:
+         patterns:
+           - "gatsby*"

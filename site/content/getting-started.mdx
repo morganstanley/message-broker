@@ -1,0 +1,32 @@
+---
+description: Quick start guide
+title: Getting Started
+---
+
+```bash
+npm install @morganstanley/message-broker
+```
+
+```Typescript
+import {
+    messagebroker,
+    TypedMessageBroker
+} from '@morganstanley/message-broker'
+
+interface IContracts {
+    myChannel: {
+        payload: string
+    }
+}
+
+const messagebroker: TypedMessageBroker<IContracts>
+    = messagebroker<IContracts>();
+
+messagebroker.get('myChannel').subscribe(message => {
+    console.log(message.payload)
+});
+
+messagebroker.create('myChannel').publish({
+    payload: 'My first message using the MessageBroker!'
+});
+```
