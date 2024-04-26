@@ -17,7 +17,7 @@ updates:
       interval: "weekly"  
 
   - package-ecosystem: npm
-     directory: /site
+     directory: "/site"
      schedule:
        interval: "monthly"
      groups:
