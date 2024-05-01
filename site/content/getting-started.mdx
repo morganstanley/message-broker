@@ -4,14 +4,14 @@ title: Getting Started
 ---
 
 ```bash
-npm install @morganstanley/message-broker
+npm install @morgan-stanley/message-broker
 ```
 
 ```Typescript
 import {
     messagebroker,
-    TypedMessageBroker
-} from '@morganstanley/message-broker'
+    IMessageBroker
+} from '@morgan-stanley/message-broker'
 
 interface IContracts {
     myChannel: {
@@ -19,14 +19,14 @@ interface IContracts {
     }
 }
 
-const messagebroker: TypedMessageBroker<IContracts>
+const broker: IMessageBroker<IContracts>
     = messagebroker<IContracts>();
 
-messagebroker.get('myChannel').subscribe(message => {
+broker.get('myChannel').subscribe(message => {
     console.log(message.payload)
 });
 
-messagebroker.create('myChannel').publish({
+broker.create('myChannel').publish({
     payload: 'My first message using the MessageBroker!'
 });
 ```
