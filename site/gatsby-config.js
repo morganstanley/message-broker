@@ -2,12 +2,12 @@ const { plugins } = require('./src/config/base-gatsby-plugins');
 
 module.exports = {
   siteMetadata: {
-    title: `Message Broker`,
-    description: `The Message Broker is a Typescript library which aims to provide asynchronous communication between typescript components.`,
-    siteUrl: 'http://opensource.morganstanley.com/message-broker',
+    title: `Project GitHub Pages Template`,
+    description: `Morgan Stanley Open Source Software`,
+    siteUrl: 'http://opensource.morganstanley.com',
     documentationUrl: false,
     //  documentationUrl: url-of.documentation.site,
   },
-  pathPrefix: `/message-broker`, // include subdirectory
+  pathPrefix: `/`, // put GitHub project url slug here e.g. github.com/morganstanley/<project url slug>
   plugins,
 };

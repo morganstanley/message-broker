@@ -1,24 +1,51 @@
-import React from 'react';
-import { Link, graphql } from 'gatsby';
+import React, { useCallback, useMemo, useState } from 'react';
+import { Link, navigate, graphql } from 'gatsby';
+import { Box } from '@mui/material';
 
 import Layout from '../components/layout';
-import Seo from '../components/seo';
+import VersionSelect from '../components/version-select';
+import { getCurrentVersion, getDocsVersion } from '../utils/version-docs';
 
 const DocumentationTemplate = ({ children, data, pageContext, location }) => {
-  const docs = data.allMdx.nodes;
+  const allDocs = data.allMdx.nodes;
   const toc = data.mdx.tableOfContents.items;
   const pageTitle = pageContext.frontmatter.title;
+  const slug = data.mdx.fields.slug;
   const siteTitle = data.site?.siteMetadata?.title;
+  const versions = useMemo(
+    () => data.allDirectory.nodes.map((node) => node.base),
+    [data.allDirectory.nodes]
+  );
+
+  const [selectedVersion, setSelectedVersion] = useState(
+    getCurrentVersion(slug, versions)
+  );
+  const docs = getDocsVersion(allDocs, getCurrentVersion(slug, versions));
+
+  const handleVersionChange = useCallback(
+    (event) => {
+      const newPath = slug.replace(selectedVersion, event.target.value);
+      setSelectedVersion(event.target.value);
+      navigate(newPath);
+    },
+    [selectedVersion, slug]
+  );
 
   return (
     <Layout data={data} location={location}>
-      <Seo title={pageTitle} description={pageContext.description} />
       <article className="page-main content">
         <h3>{siteTitle}</h3>
       </article>
       <article className="page-main content documentation-main">
         <nav className="nav documentation-nav">
           <h4>Documentation</h4>
+          <Box sx={{ mt: 3 }}>
+            <VersionSelect
+              versions={versions}
+              selectedVersion={selectedVersion}
+              onChange={handleVersionChange}
+            />
+          </Box>
           <ul>
             {docs.map((node, i) => {
               const current = location.pathname.includes(node.fields.slug);
@@ -56,6 +83,13 @@ const DocumentationTemplate = ({ children, data, pageContext, location }) => {
 
 export default DocumentationTemplate;
 
+export const Head = ({ pageContext }) => (
+  <>
+    <title>{pageContext.frontmatter.title}</title>
+    <meta name="description" content={pageContext.description} />
+  </>
+);
+
 export const pageQuery = graphql`
   query ($id: String!) {
     site {
@@ -63,9 +97,17 @@ export const pageQuery = graphql`
         title
       }
     }
+    allDirectory(filter: { relativeDirectory: { eq: "documentation" } }) {
+      nodes {
+        base
+      }
+    }
     mdx(id: { eq: $id }) {
       frontmatter {
         title
+      }
+      fields {
+        slug
       }
       tableOfContents
     }
