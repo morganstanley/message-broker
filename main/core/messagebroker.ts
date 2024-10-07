@@ -1,4 +1,4 @@
-import { get, Injectable } from '@morgan-stanley/needle';
+import { get, getRootInjector, Injectable } from '@morgan-stanley/needle';
 import { defer, Observable, Subject, Subscription } from 'rxjs';
 import { filter, shareReplay } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
@@ -29,6 +29,8 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
     return instance;
 }
 
+const rootInjector = getRootInjector();
+
 /**
  * Represents a messagebroker. Using the 'new' operator is discouraged, instead use the messagebroker() function or dependency injection.
  */
@@ -36,8 +38,9 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
 export class MessageBroker<T = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
+    private _scopes: IMessageBroker<T>[] = [];
 
-    constructor(private rsvpMediator: RSVPMediator<T>) {}
+    constructor(private rsvpMediator: RSVPMediator<T>, private _parent?: IMessageBroker<T>) {}
 
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
@@ -100,6 +103,21 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     }
 
     /**
+     * Creates a new scope with the given scopeName with this instance of the MessageBroker as its parent.
+     * If a scope with this name already exists, it returns that instance instead of creating a new one.
+     * @param scopeName The name to use for the scope to create
+     * @returns An instance of the messagebroker that matches the scopeName provided
+     */
+    public createScope(scopeName: string): IMessageBroker<T> {
+        const scope = rootInjector.createScope(scopeName);
+        scope.registerInstance(MessageBroker, new MessageBroker<T>(new RSVPMediator(), this));
+
+        const instance = scope.get(MessageBroker);
+        this._scopes.push(instance);
+        return instance;
+    }
+
+    /**
      * Return a deferred observable as the channel config may have been updated before the subscription
      * @param channelName name of channel to subscribe to
      */
@@ -143,6 +161,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         }
 
         const publishFunction = (data?: T[K], type?: string): void => {
+            this._scopes.forEach((scope) => scope.create(channelName).publish(data), type);
             this.messagePublisher.next(this.createMessage(channelName, data, type));
         };
 
@@ -179,5 +198,13 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         channel: IChannelModel<T[K]> | undefined,
     ): channel is RequiredPick<IChannelModel<T[K]>, 'config' | 'subscription'> {
         return channel != null && channel.subscription != null;
+    }
+
+    public get parent(): IMessageBroker<T> | undefined {
+        return this._parent;
+    }
+
+    public get scopes(): IMessageBroker<T>[] {
+        return this._scopes;
     }
 }
