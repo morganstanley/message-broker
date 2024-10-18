@@ -3,50 +3,97 @@ order: 5
 title: Scopes
 ---
 
-Message scoping is a mechanism for restricting which subscirbers will receive a given message.
+Message scoping is a mechanism for restricting which subscribers will receive a given message.
+You can create a new scope on a messagebroker by calling `createScope`.
 
 ```typescript
-const messagebroker: IMessageBroker<IContract> = messagebroker<IContract>();
-const child: IMessageBroker<IContract> = messagebroker.createScope('my-scope');
-const sibling: IMessageBroker<IContract> = messagebroker.createScope('my-second-scope');
+const parent: IMessageBroker<IContract> 
+    = messagebroker<IContract>();
+
+const child: IMessageBroker<IContract> 
+    = parent.createScope('my-scope');
 ```
 
-## Publish
+A scope is just another instance of an `IMessageBroker` on which you can perform all of the same operations that you'd expect on the base messagebroker.
+The main thing to note about this feature is how messages are shared across scopes.
 
-### Parent Publish
+### Scope Hierarchies
 
-Any message that is published to a broker is also published to the children scopes of that broker.
+Any message that is published to a broker is also published down through the hierarchy of children scopes belonging that broker.
 
 ```typescript
-child.subscribe(message => console.log('child received'));
-messagebroker.subscribe(message => console.log('parent received'));
-messagebroker.publish({});
+parent.get('x').subscribe(message => console.log('parent received'));
+child.get('x').subscribe(message => console.log('child received'));
 
-// console: child received
-// console: parent received
+parent.create('x').publish({});
+
+// expect: child received
+// expect: parent received
 ```
 
-### Child Publish
-
-Messages are not received by the parent scope of a given broker.
+However messages are not sent **up** the hierarchy to the parent of that broker.
 
 ```typescript
-child.subscribe(message => console.log('child received'));
-messagebroker.subscribe(message => console.log('parent received'));
-child.publish({});
+parent.get('x').subscribe(message => console.log('parent received'));
+child.get('x').subscribe(message => console.log('child received'));
 
-// console: child received
+child.create('x').publish({});
+
+// expect: child received
 ```
-
-### Sibling Publish
 
 Messages are also not published to "sibling" scopes, where the brokers share a parent.
 
 ```typescript
-child.subscribe(message => console.log('child received'));
-sibling.subscribe(message => console.log('sibling received'));
-messagebroker.subscribe(message => console.log('parent received'));
-sibling.publish({});
+const sibling: IMessageBroker<IContract> 
+    = parent.createScope('sibling-scope');
 
-// console: sibling received
+parent.get('x').subscribe(message => console.log('parent received'));
+child.get('x').subscribe(message => console.log('child received'));
+sibling.get('x').subscribe(message => console.log('sibling received'));
+
+sibling.create('x').publish({});
+
+// expect: sibling received
+```
+
+### Scope Depth
+
+Scope hierarchies can be arbitrarily deep, and messages will make their way all the way down to the bottom.
+
+```typescript
+const distantChild = parent
+    .createScope('scope1')
+    .createScope('scope2')
+    ...
+    .createScope('scopeX');
+
+distantChild.get('x').subscribe(message => console.log('child received'));
+
+parent.create('x').publish({});
+
+// expect: child received
+```
+
+### Naming
+
+Scopes under the same parent cannot have the same name.
+An attempt to create a scope with a name that already exists on a broker will just return the original scope.
+
+If they are different parts of the hierarchy (i.e. don't share a parent), then you can have multiple scopes with the same name.
+
+### Disposal
+
+Disposing of a channel in a broker will also dispose of that channel in its children scopes.
+
+```typescript
+const parentChannel = parent.create('x');
+const childChannel = child.create('x');
+parentChannel.subscribe(message => console.log('parent received'));
+childChannel.subscribe(message => console.log('child received'));
+
+parentChannel.dispose('x'); // cleans up child subscription too
+parentChannel.publish({});
+
+// expect: nothing...
 ```
