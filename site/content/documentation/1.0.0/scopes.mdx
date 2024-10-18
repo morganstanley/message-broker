@@ -1,0 +1,52 @@
+---
+order: 5
+title: Scopes
+---
+
+Message scoping is a mechanism for restricting which subscirbers will receive a given message.
+
+```typescript
+const messagebroker: IMessageBroker<IContract> = messagebroker<IContract>();
+const child: IMessageBroker<IContract> = messagebroker.createScope('my-scope');
+const sibling: IMessageBroker<IContract> = messagebroker.createScope('my-second-scope');
+```
+
+## Publish
+
+### Parent Publish
+
+Any message that is published to a broker is also published to the children scopes of that broker.
+
+```typescript
+child.subscribe(message => console.log('child received'));
+messagebroker.subscribe(message => console.log('parent received'));
+messagebroker.publish({});
+
+// console: child received
+// console: parent received
+```
+
+### Child Publish
+
+Messages are not received by the parent scope of a given broker.
+
+```typescript
+child.subscribe(message => console.log('child received'));
+messagebroker.subscribe(message => console.log('parent received'));
+child.publish({});
+
+// console: child received
+```
+
+### Sibling Publish
+
+Messages are also not published to "sibling" scopes, where the brokers share a parent.
+
+```typescript
+child.subscribe(message => console.log('child received'));
+sibling.subscribe(message => console.log('sibling received'));
+messagebroker.subscribe(message => console.log('parent received'));
+sibling.publish({});
+
+// console: sibling received
+```
