@@ -147,6 +147,18 @@ describe('MessageBroker', () => {
         expect(postDisposeNextFunction).not.toBe(channel);
     });
 
+    it('should dipose of child scope channels as well', () => {
+        const instance = getInstance();
+        const child = instance.createScope('child');
+        const channel = child.create('yourChannel');
+
+        instance.dispose('yourChannel'); // dispose of the channel in the PARENT
+
+        const postDisposeNextFunction = child.create('yourChannel');
+
+        expect(postDisposeNextFunction).not.toBe(channel);
+    });
+
     it('should allow publishing of channel message without data', () => {
         const instance = getInstance();
         const channel = instance.create('yourChannel');
@@ -373,7 +385,7 @@ describe('MessageBroker', () => {
             const instance = getInstance<IMySampleBroker>();
             const scope = instance.createScope('scope1');
 
-            expect(scope).not.toEqual(instance);
+            expect(scope).not.toBe(instance);
         });
 
         it('should return same scope if same name is used', () => {
@@ -381,14 +393,14 @@ describe('MessageBroker', () => {
             const scope = instance.createScope('scope1');
             const sameScope = instance.createScope('scope1');
 
-            expect(scope).toEqual(sameScope);
+            expect(scope).toBe(sameScope);
         });
 
         it('should return itself when getting the parent of its child', () => {
             const instance = getInstance<IMySampleBroker>();
             const scope = instance.createScope('scope1');
 
-            expect(scope.parent).toEqual(instance);
+            expect(scope.parent).toBe(instance);
         });
 
         it('should return a list of children scopes via scopes property', () => {
@@ -438,6 +450,26 @@ describe('MessageBroker', () => {
 
             expect(sisterMessages.length).toEqual(1);
             verifyMessage(sisterMessages[0], 'sister should get this');
+        });
+
+        it('should not publish messages to scopes with the same name', () => {
+            const scope1Message: Array<IMessage<string>> = [];
+            const scope2Message: Array<IMessage<string>> = [];
+            const root = getInstance();
+            const testScope = root.createScope('duplicated-scope');
+            const duplicateNameScope = root.createScope('middle').createScope('duplicated-scope');
+
+            testScope.get('channel').subscribe((message) => scope1Message.push(message));
+            duplicateNameScope.get('channel').subscribe((message) => scope2Message.push(message));
+
+            testScope.create('channel').publish('first message');
+            duplicateNameScope.create('channel').publish('second message');
+
+            expect(scope1Message.length).toEqual(1);
+            verifyMessage(scope1Message[0], 'first message');
+
+            expect(scope2Message.length).toEqual(1);
+            verifyMessage(scope2Message[0], 'second message');
         });
     });
 
