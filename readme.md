@@ -1,4 +1,5 @@
 # MessageBroker
+
 ![Lifecycle Active](https://badgen.net/badge/Lifecycle/Active/green)
 ![NPM](https://img.shields.io/npm/l/@morgan-stanley/message-broker)
 ![npm](https://img.shields.io/npm/v/@morgan-stanley/message-broker)
@@ -8,7 +9,7 @@
 
 MessageBroker provides framework agnostic, decoupled communication between publishers and subscribers. This library is fully type safe and works in both browsers and Node.js. MessageBroker is built ontop of [RxJS](https://rxjs.dev/guide/overview) providing access to observables and a comprehensive list of operators.
 
-Full documentation can be found at http://opensource.morganstanley.com/message-broker/
+Full documentation can be found at https://morganstanley.github.io/message-broker/
 
 ## Basic Usage
 
