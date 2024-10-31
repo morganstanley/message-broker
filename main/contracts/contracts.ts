@@ -62,6 +62,15 @@ export interface IMessage<T = any> {
  */
 export interface IMessageBroker<T> {
     /**
+     * A reference to the parent scope if this is not the root node in the tree of scopes. If this is the root, it's undefined.
+     */
+    readonly parent?: IMessageBroker<T>;
+    /**
+     * A list of all child scopes that have been created on this instance of the broker.
+     */
+    readonly scopes: IMessageBroker<T>[];
+
+    /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
      * No caching is set by default
      *
@@ -96,6 +105,14 @@ export interface IMessageBroker<T> {
      * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type.
      */
     rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
+
+    /**
+     * Creates a new scope with the given scopeName with this instance of the MessageBroker as its parent.
+     * If a scope with this name already exists, it returns that instance instead of creating a new one.
+     * @param scopeName The name to use for the scope to create
+     * @returns An instance of the messagebroker that matches the scopeName provided
+     */
+    createScope(scopeName: string): IMessageBroker<T>;
 }
 
 /**
