@@ -68,7 +68,7 @@ export interface IMessageBroker<T> {
     /**
      * A list of all child scopes that have been created on this instance of the broker.
      */
-    readonly scopes: IMessageBroker<T>[];
+    readonly children: IMessageBroker<T>[];
 
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.

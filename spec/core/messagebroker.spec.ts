@@ -409,7 +409,7 @@ describe('MessageBroker', () => {
             const scope2 = instance.createScope('scope2');
             const scope3 = instance.createScope('scope3');
 
-            expect(instance.scopes).toEqual([scope1, scope2, scope3]);
+            expect(instance.children).toEqual([scope1, scope2, scope3]);
         });
 
         it('should publish messages from parent to children', () => {

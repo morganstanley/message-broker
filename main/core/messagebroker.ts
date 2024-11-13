@@ -36,7 +36,7 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
 export class MessageBroker<T = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
-    private _scopes: {
+    private _children: {
         name: string;
         instance: IMessageBroker<T>;
     }[] = [];
@@ -96,7 +96,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @param channelName Name of the messagebroker channel
      */
     public dispose<K extends keyof T>(channelName: K): void {
-        this._scopes.forEach((scope) => scope.instance.dispose(channelName));
+        this._children.forEach((scope) => scope.instance.dispose(channelName));
         const channel = this.channelLookup[channelName];
         if (this.isChannelConfiguredWithCaching(channel)) {
             channel.subscription.unsubscribe();
@@ -111,13 +111,13 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @returns An instance of the messagebroker that matches the scopeName provided
      */
     public createScope(scopeName: string): IMessageBroker<T> {
-        const existingScope = this._scopes.find((scope) => scope.name === scopeName);
+        const existingScope = this._children.find((scope) => scope.name === scopeName);
         if (existingScope) {
             return existingScope.instance;
         }
 
         const instance = new MessageBroker<T>(this.rsvpMediator, this);
-        this._scopes.push({
+        this._children.push({
             name: scopeName,
             instance,
         });
@@ -168,7 +168,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         }
 
         const publishFunction = (data?: T[K], type?: string): void => {
-            this._scopes.forEach((scope) => scope.instance.create(channelName).publish(data), type);
+            this._children.forEach((scope) => scope.instance.create(channelName).publish(data), type);
             this.messagePublisher.next(this.createMessage(channelName, data, type));
         };
 
@@ -211,7 +211,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         return this._parent;
     }
 
-    public get scopes(): IMessageBroker<T>[] {
-        return this._scopes.map((scope) => scope.instance);
+    public get children(): IMessageBroker<T>[] {
+        return this._children.map((scope) => scope.instance);
     }
 }
