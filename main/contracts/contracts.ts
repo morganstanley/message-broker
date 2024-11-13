@@ -113,6 +113,13 @@ export interface IMessageBroker<T> {
      * @returns An instance of the messagebroker that matches the scopeName provided
      */
     createScope(scopeName: string): IMessageBroker<T>;
+
+    /**
+     * Returns true if this is root node of the tree of MessageBrokers.
+     * The root MessageBroker will not have a parent MessageBroker.
+     * @returns A boolean indicating whether this is the root or not
+     */
+    isRoot(): boolean;
 }
 
 /**

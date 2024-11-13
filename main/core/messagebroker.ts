@@ -207,6 +207,10 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         return channel != null && channel.subscription != null;
     }
 
+    public isRoot(): boolean {
+        return this._parent === undefined;
+    }
+
     public get parent(): IMessageBroker<T> | undefined {
         return this._parent;
     }
