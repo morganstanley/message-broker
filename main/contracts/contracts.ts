@@ -118,6 +118,10 @@ export interface IMessageBroker<T> {
      */
     createScope(scopeName: string): IMessageBroker<T>;
 
+    /*
+     * Destroys all children scopes, disposes of all message channels on
+     * this instance and removes itself from its parents children.
+     */
     destroy(): void;
 
     /**

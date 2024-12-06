@@ -124,6 +124,10 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         return instance;
     }
 
+    /*
+     * Destroys all children scopes, disposes of all message channels on
+     * this instance and removes itself from its parents children.
+     */
     public destroy(): void {
         this._children.forEach((childScope) => childScope.destroy());
 
