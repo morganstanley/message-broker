@@ -388,6 +388,17 @@ describe('MessageBroker', () => {
             expect(scope).not.toBe(instance);
         });
 
+        it('should give the name root to the initial messagebroker instance', () => {
+            const instance = getInstance<IMySampleBroker>();
+            expect(instance.name).toBe('root');
+        });
+
+        it('should name child scopes correctly', () => {
+            const instance = getInstance<IMySampleBroker>();
+            const child = instance.createScope('myChild');
+            expect(child.name).toBe('myChild');
+        });
+
         it('should return same scope if same name is used', () => {
             const instance = getInstance<IMySampleBroker>();
             const scope = instance.createScope('scope1');
