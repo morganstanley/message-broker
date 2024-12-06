@@ -12,6 +12,8 @@ const parent: IMessageBroker<IContract>
 
 const child: IMessageBroker<IContract> 
     = parent.createScope('my-scope');
+
+parent.children.contains(child) // expect: true
 ```
 
 A scope is just another instance of an `IMessageBroker` on which you can perform all of the same operations that you'd expect on the base messagebroker.
@@ -86,14 +88,12 @@ If they are different parts of the hierarchy (i.e. don't share a parent), then y
 
 Disposing of a channel in a broker will also dispose of that channel in its children scopes.
 
+### Destroy
+
+A MessageBroker instance can be destroyed.
+Destroying a MessageBroker will first destroy all of its children, it will dispose of all its channels, and finally remove itself from its parent.
+
 ```typescript
-const parentChannel = parent.create('x');
-const childChannel = child.create('x');
-parentChannel.subscribe(message => console.log('parent received'));
-childChannel.subscribe(message => console.log('child received'));
-
-parentChannel.dispose('x'); // cleans up child subscription too
-parentChannel.publish({});
-
-// expect: nothing...
+child.destroy();
+parent.children.contains(child); // expect: false
 ```

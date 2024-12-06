@@ -471,6 +471,83 @@ describe('MessageBroker', () => {
             expect(scope2Message.length).toEqual(1);
             verifyMessage(scope2Message[0], 'second message');
         });
+
+        describe('Destroy', () => {
+            it('should dispose of all subscriptions on that instance and its child', () => {
+                const instance = getInstance();
+                const instanceChannel = instance.create('yourChannel');
+                const child = instance.createScope('child');
+                const childChannel = instance.create('yourChannel');
+
+                instance.destroy(); // destroy the PARENT
+
+                const postDisposeInstanceChannel = instance.create('yourChannel');
+                const postDisposeChildChannel = child.create('yourChannel');
+
+                expect(postDisposeInstanceChannel).not.toBe(instanceChannel);
+                expect(postDisposeChildChannel).not.toBe(childChannel);
+            });
+
+            it('should remove itself from its parents children', () => {
+                const parent = getInstance();
+                const child = parent.createScope('child');
+
+                expect(parent.children).toContain(child);
+                child.destroy();
+                expect(parent.children).not.toContain(child);
+            });
+
+            it('should remove its parent', () => {
+                const parent = getInstance();
+                const child = parent.createScope('child');
+
+                child.destroy();
+                expect(child.parent).toBeUndefined();
+            });
+
+            it('should prevent message propagation from happening', () => {
+                const childMessages: Array<IMessage<string>> = [];
+                const parentMessages: Array<IMessage<string>> = [];
+                const parent = getInstance();
+                const child = parent.createScope('child');
+
+                child.get('channel').subscribe((message) => childMessages.push(message));
+                parent.get('channel').subscribe((message) => parentMessages.push(message));
+
+                child.destroy();
+
+                parent.create('channel').publish('message');
+
+                expect(childMessages.length).toEqual(0);
+
+                expect(parentMessages.length).toEqual(1);
+                verifyMessage(parentMessages[0], 'message');
+            });
+
+            it('should destroy all child scopes as well', () => {
+                const parent = getInstance();
+                const child = parent.createScope('child');
+
+                const parentChannel = parent.create('channel', { replayCacheSize: 2 });
+                const childChannel = child.create('channel', { replayCacheSize: 2 });
+
+                parentChannel.publish('message one');
+                parentChannel.publish('message two');
+
+                parent.destroy(); // this should cancel the existing caching subscriptions
+
+                const childMessages: Array<IMessage<string>> = [];
+                const parentMessages: Array<IMessage<string>> = [];
+                parentChannel.stream.subscribe((message) => parentMessages.push(message));
+                childChannel.stream.subscribe((message) => childMessages.push(message));
+
+                parentChannel.publish('message three');
+
+                expect(childMessages.length).toEqual(0);
+                expect(parentMessages.length).toEqual(1);
+                verifyMessage(parentMessages[0], 'message three');
+            });
+        });
     });
 
     function verifyMessage<T>(message: IMessage<T>, expectedData: T, expectedType?: string) {

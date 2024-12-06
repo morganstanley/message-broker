@@ -36,12 +36,13 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
 export class MessageBroker<T = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
-    private _children: {
-        name: string;
-        instance: IMessageBroker<T>;
-    }[] = [];
+    private _children: IMessageBroker<T>[] = [];
 
-    constructor(private rsvpMediator: RSVPMediator<T>, private _parent?: IMessageBroker<T>) {}
+    constructor(
+        private rsvpMediator: RSVPMediator<T>,
+        private _parent?: IMessageBroker<T>,
+        private _name: string = 'root',
+    ) {}
 
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
@@ -96,7 +97,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @param channelName Name of the messagebroker channel
      */
     public dispose<K extends keyof T>(channelName: K): void {
-        this._children.forEach((scope) => scope.instance.dispose(channelName));
+        this._children.forEach((scope) => scope.dispose(channelName));
         const channel = this.channelLookup[channelName];
         if (this.isChannelConfiguredWithCaching(channel)) {
             channel.subscription.unsubscribe();
@@ -111,17 +112,28 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @returns An instance of the messagebroker that matches the scopeName provided
      */
     public createScope(scopeName: string): IMessageBroker<T> {
+        if (scopeName === 'root') return this;
+
         const existingScope = this._children.find((scope) => scope.name === scopeName);
         if (existingScope) {
-            return existingScope.instance;
+            return existingScope;
         }
 
-        const instance = new MessageBroker<T>(this.rsvpMediator, this);
-        this._children.push({
-            name: scopeName,
-            instance,
-        });
+        const instance = new MessageBroker<T>(this.rsvpMediator, this, scopeName);
+        this._children.push(instance);
         return instance;
+    }
+
+    public destroy(): void {
+        this._children.forEach((childScope) => childScope.destroy());
+
+        type Channels = (keyof typeof this.channelLookup)[];
+        (Object.keys(this.channelLookup) as Channels).forEach((channelName) => this.dispose(channelName));
+
+        if (this._parent) {
+            this._parent.children = this._parent.children.filter((child) => child !== this); // remove itself from the parent
+            this._parent = undefined;
+        }
     }
 
     /**
@@ -168,7 +180,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         }
 
         const publishFunction = (data?: T[K], type?: string): void => {
-            this._children.forEach((scope) => scope.instance.create(channelName).publish(data), type);
+            this._children.forEach((scope) => scope.create(channelName).publish(data), type); // propagate messages to children
             this.messagePublisher.next(this.createMessage(channelName, data, type));
         };
 
@@ -216,6 +228,14 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     }
 
     public get children(): IMessageBroker<T>[] {
-        return this._children.map((scope) => scope.instance);
+        return this._children;
+    }
+
+    protected set children(children: IMessageBroker<T>[]) {
+        this._children = children;
+    }
+
+    public get name(): string {
+        return this._name;
     }
 }
