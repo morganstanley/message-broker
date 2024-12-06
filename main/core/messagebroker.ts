@@ -112,8 +112,6 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @returns An instance of the messagebroker that matches the scopeName provided
      */
     public createScope(scopeName: string): IMessageBroker<T> {
-        if (scopeName === 'root') return this;
-
         const existingScope = this._children.find((scope) => scope.name === scopeName);
         if (existingScope) {
             return existingScope;
