@@ -62,6 +62,19 @@ export interface IMessage<T = any> {
  */
 export interface IMessageBroker<T> {
     /**
+     * A unique identifier for this instance of the MessageBroker. This is useful for identifying an instance within a tree of scopes.
+     */
+    readonly name: string;
+    /**
+     * A reference to the parent scope if this is not the root node in the tree of scopes. If this is the root, it's undefined.
+     */
+    readonly parent?: IMessageBroker<T>;
+    /**
+     * A list of all child scopes that have been created on this instance of the broker.
+     */
+    children: IMessageBroker<T>[];
+
+    /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
      * No caching is set by default
      *
@@ -96,6 +109,27 @@ export interface IMessageBroker<T> {
      * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type.
      */
     rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
+
+    /**
+     * Creates a new scope with the given scopeName with this instance of the MessageBroker as its parent.
+     * If a scope with this name already exists, it returns that instance instead of creating a new one.
+     * @param scopeName The name to use for the scope to create
+     * @returns An instance of the messagebroker that matches the scopeName provided
+     */
+    createScope(scopeName: string): IMessageBroker<T>;
+
+    /*
+     * Destroys all children scopes, disposes of all message channels on
+     * this instance and removes itself from its parents children.
+     */
+    destroy(): void;
+
+    /**
+     * Returns true if this is root node of the tree of MessageBrokers.
+     * The root MessageBroker will not have a parent MessageBroker.
+     * @returns A boolean indicating whether this is the root or not
+     */
+    isRoot(): boolean;
 }
 
 /**
