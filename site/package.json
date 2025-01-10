@@ -26,7 +26,6 @@
     "clean": "gatsby clean"
   },
   "devDependencies": {
-    "identity-obj-proxy": "^3.0.0",
     "prettier": "^3.3.3",
     "rimraf": "^6.0.1"
   }
