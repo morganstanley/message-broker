@@ -1,0 +1,52 @@
+---
+order: 1
+title: Homepage
+---
+
+import GettingStarted from './getting-started.mdx';
+
+<Hero title="Message Broker">
+  The Message Broker is a Typescript library which aims to provide asynchronous
+  communication between typescript components. It leverages the RxJS library to
+  facilitate a pub/sub pattern and accepts user-defined contracts to ensure type
+  safety across messages.
+</Hero>
+
+<section className="content">
+    <Article title="Background">
+    This project was written at Morgan Stanley to provide an internal messaging system for large scale UI systems.
+    The project was later Open Sourced so others could benefit from it.
+    </Article>
+    <Article title="Use cases">
+    Here is an example of a usecase in which the Message Broker could be useful.
+
+    #### Notification system
+
+    Let's say you have some document uploading functionality in your UI.
+    The uploading may take up to a minute and you don't want the user to have to wait, so once the upload is complete you want to have a pop-up notification appear which tells the user that their upload was successful.
+
+    The code for your pop-up notification can live anywhere in your codebase, and can "listen" for a "document_uploaded" message using the MessageBroker.
+    Now all that needs to happen is for the document upload service to publish that message when the upload completes.
+
+    **Note:** that with this model, our document uploading service doesn't even have to know about the existence of the notification service, so everything is nice and decoupled.
+
+    #### Mediator Pattern
+
+    More generically, the Message Broker essentially acts as a [Mediator](https://refactoring.guru/design-patterns/mediator) for your components.
+    Any time you would apply the Mediator pattern, the Message Broker is the perfect solution to avoid you some boilerplate coding.
+
+    </Article>
+    <Article title="Alternatives">
+    List of alternatives to the Message Broker.
+
+    - [BullMQ](https://docs.bullmq.io)
+        - Relies on Redis
+    - [@node-ts/bus](https://bus.node-ts.com)
+
+    Both of these alternatives lack the same level of type safety that the Message Broker provides.
+    </Article>
+    <Article title="Getting Started">
+        <GettingStarted />
+    </Article>
+
+</section>

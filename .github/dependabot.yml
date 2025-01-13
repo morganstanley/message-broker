@@ -4,23 +4,37 @@
 # https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
 version: 2
-updates:
-  - package-ecosystem: "npm" # See documentation for possible values
-    directory: "/" # Location of package manifests
-    schedule:
-      interval: "weekly"
-      
-  # Maintain dependencies for GitHub Actions
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"  
 
-  - package-ecosystem: npm
-     directory: "/site"
-     schedule:
-       interval: "monthly"
-     groups:
-       gatsby:
-         patterns:
-           - "gatsby*"
+registries:
+    github-packages:
+        type: npm-registry
+        url: 'https://npm.pkg.github.com'
+        token: ${{ secrets.DEPENDABOT_GITHUB_PACKAGES }}
+
+updates:
+    - package-ecosystem: 'npm' # See documentation for possible values
+      directory: '/' # Location of package manifests
+      schedule:
+          interval: 'weekly'
+
+    # Maintain dependencies for GitHub Actions
+    - package-ecosystem: 'github-actions'
+      directory: '/'
+      schedule:
+          interval: 'weekly'
+
+    - package-ecosystem: 'npm'
+      directory: '/site'
+      schedule:
+          interval: 'monthly'
+      groups:
+          gatsby:
+              patterns:
+                  - 'gatsby*'
+
+    - package-ecosystem: 'npm'
+      registries:
+          - 'github-packages'
+      directory: '/site'
+      schedule:
+          interval: 'monthly'
