@@ -111,8 +111,8 @@ export class MessageBroker<T extends TParent = any, TParent = any> implements IM
     }
 
     /*
-     * Destroys all children scopes, disposes of all message channels on
-     * this instance and removes itself from its parents children.
+     * Disposes of all message channels on this instance.
+     * It also destroys the connection between this and its parent so that messages will no longer propogate up.
      */
     public destroy(): void {
         type Channels = (keyof typeof this.channelLookup)[];

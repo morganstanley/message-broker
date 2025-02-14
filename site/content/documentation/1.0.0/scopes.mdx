@@ -11,29 +11,25 @@ const parent: IMessageBroker<IContract>
     = messagebroker<IContract>();
 
 const child: IMessageBroker<IContract> 
-    = parent.createScope('my-scope');
-
-parent.children.contains(child) // expect: true
+    = parent.createScope();
 ```
 
 A scope is just another instance of an `IMessageBroker` on which you can perform all of the same operations that you'd expect on the base messagebroker.
-The main thing to note about this feature is how messages are shared across scopes.
+The main thing to note about this feature is how messages are handled when a scope doesn't have any subscribers for a channel.
 
 ### Scope Hierarchies
 
-Any message that is published to a broker is also published down through the hierarchy of children scopes belonging that broker.
+Any message that is published to a broker will be passed up the chain of scopes until a handler for the message is found.
 
 ```typescript
 parent.get('x').subscribe(message => console.log('parent received'));
-child.get('x').subscribe(message => console.log('child received'));
 
-parent.create('x').publish({});
+child.create('x').publish({});
 
-// expect: child received
 // expect: parent received
 ```
 
-However messages are not sent **up** the hierarchy to the parent of that broker.
+However messages are **not** sent up the hierarchy if the channel in the child has been subscribed to.
 
 ```typescript
 parent.get('x').subscribe(message => console.log('parent received'));
@@ -48,7 +44,7 @@ Messages are also not published to "sibling" scopes, where the brokers share a p
 
 ```typescript
 const sibling: IMessageBroker<IContract> 
-    = parent.createScope('sibling-scope');
+    = parent.createScope();
 
 parent.get('x').subscribe(message => console.log('parent received'));
 child.get('x').subscribe(message => console.log('child received'));
@@ -61,32 +57,21 @@ sibling.create('x').publish({});
 
 ### Scope Depth
 
-Scope hierarchies can be arbitrarily deep, and messages will make their way all the way down to the bottom.
+Scope hierarchies can be arbitrarily deep, and messages will make their way all the way to the top to find a handler.
 
 ```typescript
 const distantChild = parent
-    .createScope('scope1')
-    .createScope('scope2')
+    .createScope()
+    .createScope()
     ...
-    .createScope('scopeX');
+    .createScope();
 
-distantChild.get('x').subscribe(message => console.log('child received'));
+parent.get('x').subscribe(message => console.log('parent received'));
 
-parent.create('x').publish({});
+distantChild.create('x').publish({});
 
-// expect: child received
+// expect: parent received
 ```
-
-### Naming
-
-Scopes under the same parent cannot have the same name.
-An attempt to create a scope with a name that already exists on a broker will just return the original scope.
-
-If they are different parts of the hierarchy (i.e. don't share a parent), then you can have multiple scopes with the same name.
-
-### Disposal
-
-Disposing of a channel in a broker will also dispose of that channel in its children scopes.
 
 ### Destroy
 
