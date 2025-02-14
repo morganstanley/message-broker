@@ -100,10 +100,9 @@ export class MessageBroker<T extends TParent = any, TParent = any> implements IM
     }
 
     /**
-     * Creates a new scope with the given scopeName with this instance of the MessageBroker as its parent.
-     * If a scope with this name already exists, it returns that instance instead of creating a new one.
-     * @param scopeName The name to use for the scope to create
-     * @returns An instance of the messagebroker that matches the scopeName provided
+     * Creates a new scope with this instance of the MessageBroker as its parent.
+     * Messages from the scope will be passed to this instance if the child scope doesn't have a handler for it.
+     * @returns A new instance of the messagebroker
      */
     public createScope<K extends T>(): IMessageBroker<K> {
         const instance = new MessageBroker<K, T>(this.rsvpMediator, this as MessageBroker<T>);

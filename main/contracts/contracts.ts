@@ -98,16 +98,15 @@ export interface IMessageBroker<T> {
     rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
 
     /**
-     * Creates a new scope with the given scopeName with this instance of the MessageBroker as its parent.
-     * If a scope with this name already exists, it returns that instance instead of creating a new one.
-     * @param scopeName The name to use for the scope to create
-     * @returns An instance of the messagebroker that matches the scopeName provided
+     * Creates a new scope with this instance of the MessageBroker as its parent.
+     * Messages from the scope will be passed to this instance if the child scope doesn't have a handler for it.
+     * @returns A new instance of the messagebroker
      */
-    createScope<K extends T>(scopeName: string): IMessageBroker<K>;
+    createScope<K extends T>(): IMessageBroker<K>;
 
     /*
-     * Destroys all children scopes, disposes of all message channels on
-     * this instance and removes itself from its parents children.
+     * Disposes of all message channels on this instance.
+     * It also destroys the connection between this and its parent so that messages will no longer propogate up.
      */
     destroy(): void;
 
