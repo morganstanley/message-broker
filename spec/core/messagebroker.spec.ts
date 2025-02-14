@@ -24,7 +24,7 @@ describe('MessageBroker', () => {
         mockRSVPMediator = Mock.create<RSVPMediator<any>>().setup(setupFunction('rsvp'));
     });
 
-    function getInstance<T = any>(): MessageBroker {
+    function getInstance<T = any>(): MessageBroker<T> {
         return new MessageBroker<T>(mockRSVPMediator.mock);
     }
 
@@ -149,7 +149,7 @@ describe('MessageBroker', () => {
 
     it('should dipose of child scope channels as well', () => {
         const instance = getInstance();
-        const child = instance.createScope('child');
+        const child = instance.createScope();
         const channel = child.create('yourChannel');
 
         instance.dispose('yourChannel'); // dispose of the channel in the PARENT
@@ -381,74 +381,50 @@ describe('MessageBroker', () => {
     });
 
     describe('Scopes', () => {
-        it('should return a new messagebroker instance when creating a new scope', () => {
+        it('should return a new messagebroker instance for each new scope', () => {
             const instance = getInstance<IMySampleBroker>();
-            const scope = instance.createScope('scope1');
+            const scope = instance.createScope();
+            const scope2 = instance.createScope();
 
             expect(scope).not.toBe(instance);
+            expect(scope).not.toBe(scope2);
         });
 
-        it('should give the name root to the initial messagebroker instance', () => {
-            const instance = getInstance<IMySampleBroker>();
-            expect(instance.name).toBe('root');
+        it('should publish messages from child to parent if there is no handler on child', () => {
+            const parentMessages: Array<IMessage<string>> = [];
+            const parent = getInstance();
+            const child = parent.createScope();
+
+            parent.get('channel').subscribe((message) => parentMessages.push(message));
+            child.create('channel').publish('parent should handle this');
+
+            expect(parentMessages.length).toEqual(1);
+            verifyMessage(parentMessages[0], 'parent should handle this');
         });
 
-        it('should name child scopes correctly', () => {
-            const instance = getInstance<IMySampleBroker>();
-            const child = instance.createScope('myChild');
-            expect(child.name).toBe('myChild');
-        });
-
-        it('should return same scope if same name is used', () => {
-            const instance = getInstance<IMySampleBroker>();
-            const scope = instance.createScope('scope1');
-            const sameScope = instance.createScope('scope1');
-
-            expect(scope).toBe(sameScope);
-        });
-
-        it('should return itself when getting the parent of its child', () => {
-            const instance = getInstance<IMySampleBroker>();
-            const scope = instance.createScope('scope1');
-
-            expect(scope.parent).toBe(instance);
-        });
-
-        it('should return a list of children scopes via scopes property', () => {
-            const instance = getInstance<IMySampleBroker>();
-            const scope1 = instance.createScope('scope1');
-            const scope2 = instance.createScope('scope2');
-            const scope3 = instance.createScope('scope3');
-
-            expect(instance.children).toEqual([scope1, scope2, scope3]);
-        });
-
-        it('should publish messages from parent to children', () => {
+        it('should not publish messages from child to parent if there is a handler on child', () => {
             const parentMessages: Array<IMessage<string>> = [];
             const childMessages: Array<IMessage<string>> = [];
             const parent = getInstance();
-            const child = parent.createScope('scope1');
+            const child = parent.createScope();
 
             parent.get('channel').subscribe((message) => parentMessages.push(message));
             child.get('channel').subscribe((message) => childMessages.push(message));
 
-            parent.create('channel').publish('both should get this');
-            child.create('channel').publish('only the child should get this');
+            child.create('channel').publish('child should handle this');
 
-            expect(parentMessages.length).toEqual(1);
-            verifyMessage(parentMessages[0], 'both should get this');
+            expect(parentMessages.length).toEqual(0);
 
-            expect(childMessages.length).toEqual(2);
-            verifyMessage(childMessages[0], 'both should get this');
-            verifyMessage(childMessages[1], 'only the child should get this');
+            expect(childMessages.length).toEqual(1);
+            verifyMessage(childMessages[0], 'child should handle this');
         });
 
         it('should not publish messages to "sibling" scopes', () => {
             const brotherMessages: Array<IMessage<string>> = [];
             const sisterMessages: Array<IMessage<string>> = [];
             const parent = getInstance();
-            const brother = parent.createScope('scope1');
-            const sister = parent.createScope('scope2');
+            const brother = parent.createScope();
+            const sister = parent.createScope();
 
             brother.get('channel').subscribe((message) => brotherMessages.push(message));
             sister.get('channel').subscribe((message) => sisterMessages.push(message));
@@ -463,31 +439,11 @@ describe('MessageBroker', () => {
             verifyMessage(sisterMessages[0], 'sister should get this');
         });
 
-        it('should not publish messages to scopes with the same name', () => {
-            const scope1Message: Array<IMessage<string>> = [];
-            const scope2Message: Array<IMessage<string>> = [];
-            const root = getInstance();
-            const testScope = root.createScope('duplicated-scope');
-            const duplicateNameScope = root.createScope('middle').createScope('duplicated-scope');
-
-            testScope.get('channel').subscribe((message) => scope1Message.push(message));
-            duplicateNameScope.get('channel').subscribe((message) => scope2Message.push(message));
-
-            testScope.create('channel').publish('first message');
-            duplicateNameScope.create('channel').publish('second message');
-
-            expect(scope1Message.length).toEqual(1);
-            verifyMessage(scope1Message[0], 'first message');
-
-            expect(scope2Message.length).toEqual(1);
-            verifyMessage(scope2Message[0], 'second message');
-        });
-
         describe('Destroy', () => {
             it('should dispose of all subscriptions on that instance and its child', () => {
                 const instance = getInstance();
                 const instanceChannel = instance.create('yourChannel');
-                const child = instance.createScope('child');
+                const child = instance.createScope();
                 const childChannel = instance.create('yourChannel');
 
                 instance.destroy(); // destroy the PARENT
@@ -499,45 +455,24 @@ describe('MessageBroker', () => {
                 expect(postDisposeChildChannel).not.toBe(childChannel);
             });
 
-            it('should remove itself from its parents children', () => {
-                const parent = getInstance();
-                const child = parent.createScope('child');
-
-                expect(parent.children).toContain(child);
-                child.destroy();
-                expect(parent.children).not.toContain(child);
-            });
-
-            it('should remove its parent', () => {
-                const parent = getInstance();
-                const child = parent.createScope('child');
-
-                child.destroy();
-                expect(child.parent).toBeUndefined();
-            });
-
             it('should prevent message propagation from happening', () => {
                 const childMessages: Array<IMessage<string>> = [];
                 const parentMessages: Array<IMessage<string>> = [];
                 const parent = getInstance();
-                const child = parent.createScope('child');
+                const child = parent.createScope();
 
-                child.get('channel').subscribe((message) => childMessages.push(message));
                 parent.get('channel').subscribe((message) => parentMessages.push(message));
+                parent.destroy();
 
-                child.destroy();
-
-                parent.create('channel').publish('message');
+                child.create('channel').publish('message');
 
                 expect(childMessages.length).toEqual(0);
-
-                expect(parentMessages.length).toEqual(1);
-                verifyMessage(parentMessages[0], 'message');
+                expect(parentMessages.length).toEqual(0);
             });
 
             it('should destroy all child scopes as well', () => {
                 const parent = getInstance();
-                const child = parent.createScope('child');
+                const child = parent.createScope();
 
                 const parentChannel = parent.create('channel', { replayCacheSize: 2 });
                 const childChannel = child.create('channel', { replayCacheSize: 2 });

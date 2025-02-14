@@ -62,19 +62,6 @@ export interface IMessage<T = any> {
  */
 export interface IMessageBroker<T> {
     /**
-     * A unique identifier for this instance of the MessageBroker. This is useful for identifying an instance within a tree of scopes.
-     */
-    readonly name: string;
-    /**
-     * A reference to the parent scope if this is not the root node in the tree of scopes. If this is the root, it's undefined.
-     */
-    readonly parent?: IMessageBroker<T>;
-    /**
-     * A list of all child scopes that have been created on this instance of the broker.
-     */
-    children: IMessageBroker<T>[];
-
-    /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
      * No caching is set by default
      *
@@ -116,7 +103,7 @@ export interface IMessageBroker<T> {
      * @param scopeName The name to use for the scope to create
      * @returns An instance of the messagebroker that matches the scopeName provided
      */
-    createScope(scopeName: string): IMessageBroker<T>;
+    createScope<K extends T>(scopeName: string): IMessageBroker<K>;
 
     /*
      * Destroys all children scopes, disposes of all message channels on
