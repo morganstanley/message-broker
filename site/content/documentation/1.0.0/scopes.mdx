@@ -3,7 +3,7 @@ order: 5
 title: Scopes
 ---
 
-Message scoping is a mechanism for restricting which subscribers will receive a given message.
+Scopes are a mechanism for creating a tree of messagebrokers, where a message will be passed up the tree until either a handler is found for the message, or the root of the tree is reached.
 You can create a new scope on a messagebroker by calling `createScope`.
 
 ```typescript
