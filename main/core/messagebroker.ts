@@ -105,7 +105,7 @@ export class MessageBroker<T extends TParent = any, TParent = any> implements IM
      * @returns A new instance of the messagebroker
      */
     public createScope<K extends T>(): IMessageBroker<K> {
-        const instance = new MessageBroker<K, T>(this.rsvpMediator, this as MessageBroker<T>);
+        const instance = new MessageBroker<K, T>(this.rsvpMediator, this);
         return instance;
     }
 
