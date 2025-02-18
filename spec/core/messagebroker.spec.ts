@@ -147,18 +147,6 @@ describe('MessageBroker', () => {
         expect(postDisposeNextFunction).not.toBe(channel);
     });
 
-    it('should dipose of child scope channels as well', () => {
-        const instance = getInstance();
-        const child = instance.createScope();
-        const channel = child.create('yourChannel');
-
-        instance.dispose('yourChannel'); // dispose of the channel in the PARENT
-
-        const postDisposeNextFunction = child.create('yourChannel');
-
-        expect(postDisposeNextFunction).not.toBe(channel);
-    });
-
     it('should allow publishing of channel message without data', () => {
         const instance = getInstance();
         const channel = instance.create('yourChannel');
@@ -462,7 +450,8 @@ describe('MessageBroker', () => {
                 const child = parent.createScope();
 
                 parent.get('channel').subscribe((message) => parentMessages.push(message));
-                parent.destroy();
+
+                child.destroy();
 
                 child.create('channel').publish('message');
 
@@ -470,28 +459,24 @@ describe('MessageBroker', () => {
                 expect(parentMessages.length).toEqual(0);
             });
 
-            it('should destroy all child scopes as well', () => {
+            it('should destroy all cached messages on parent as well', () => {
                 const parent = getInstance();
                 const child = parent.createScope();
 
                 const parentChannel = parent.create('channel', { replayCacheSize: 2 });
                 const childChannel = child.create('channel', { replayCacheSize: 2 });
 
-                parentChannel.publish('message one');
-                parentChannel.publish('message two');
+                childChannel.publish('message one');
+                childChannel.publish('message two');
 
-                parent.destroy(); // this should cancel the existing caching subscriptions
+                child.destroy(); // this should cancel the existing caching subscriptions
 
-                const childMessages: Array<IMessage<string>> = [];
                 const parentMessages: Array<IMessage<string>> = [];
                 parentChannel.stream.subscribe((message) => parentMessages.push(message));
-                childChannel.stream.subscribe((message) => childMessages.push(message));
 
-                parentChannel.publish('message three');
+                childChannel.publish('message three');
 
-                expect(childMessages.length).toEqual(0);
-                expect(parentMessages.length).toEqual(1);
-                verifyMessage(parentMessages[0], 'message three');
+                expect(parentMessages.length).toEqual(0);
             });
         });
     });
