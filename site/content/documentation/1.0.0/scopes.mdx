@@ -3,82 +3,78 @@ order: 5
 title: Scopes
 ---
 
-Scopes are a mechanism for creating a tree of messagebrokers, where a message will be passed up the tree until either a handler is found for the message, or the root of the tree is reached.
-You can create a new scope on a messagebroker by calling `createScope`.
+Scopes provide a hierarchical structure for message brokers, enabling messages to propagate up the tree until a handler is found or the root is reached. This allows for a flexible and organized message handling system. You can create a new scope on a message broker using the `createScope` method.
 
 ```typescript
-const parent: IMessageBroker<IContract> 
-    = messagebroker<IContract>();
+const parent: IMessageBroker<IContract> = messagebroker<IContract>();
+const child: IMessageBroker<IContract> = parent.createScope();
 
-const child: IMessageBroker<IContract> 
-    = parent.createScope();
+A scope acts as another instance of `IMessageBroker`, supporting all the standard operations. A key aspect of scopes is how they manage messages when a channel lacks subscribers.
+
+### Scope Hierarchies: Message Propagation
 ```
 
-A scope is just another instance of an `IMessageBroker` on which you can perform all of the same operations that you'd expect on the base messagebroker.
-The main thing to note about this feature is how messages are handled when a scope doesn't have any subscribers for a channel.
-
-### Scope Hierarchies
-
-Any message that is published to a broker will be passed up the chain of scopes until a handler for the message is found.
+When a message is published, it ascends the scope hierarchy until a handler is found.
 
 ```typescript
-parent.get('x').subscribe(message => console.log('parent received'));
+const parent: IMessageBroker<IContract> = messagebroker<IContract>();
+const child: IMessageBroker<IContract> = parent.createScope();
 
+parent.get('x').subscribe((message) => console.log('parent received'));
 child.create('x').publish({});
 
 // expect: parent received
 ```
 
-However messages are **not** sent up the hierarchy if the channel in the child has been subscribed to.
+If a channel in a child scope has subscribers, messages are **not** propagated up the hierarchy. The message will be handled within the scope it was published to.
 
 ```typescript
-parent.get('x').subscribe(message => console.log('parent received'));
-child.get('x').subscribe(message => console.log('child received'));
+const parent: IMessageBroker<IContract> = messagebroker<IContract>();
+const child: IMessageBroker<IContract> = parent.createScope();
+
+parent.get('x').subscribe((message) => console.log('parent received'));
+child.get('x').subscribe((message) => console.log('child received'));
 
 child.create('x').publish({});
 
 // expect: child received
 ```
 
-Messages are also not published to "sibling" scopes, where the brokers share a parent.
+Messages are also isolated to their specific scope and are not automatically sent to sibling scopes (scopes sharing the same parent).
 
 ```typescript
-const sibling: IMessageBroker<IContract> 
-    = parent.createScope();
+const parent: IMessageBroker<IContract> = messagebroker<IContract>();
+const child: IMessageBroker<IContract> = parent.createScope();
+const sibling: IMessageBroker<IContract> = parent.createScope();
 
-parent.get('x').subscribe(message => console.log('parent received'));
-child.get('x').subscribe(message => console.log('child received'));
-sibling.get('x').subscribe(message => console.log('sibling received'));
+parent.get('x').subscribe((message) => console.log('parent received'));
+child.get('x').subscribe((message) => console.log('child received'));
+sibling.get('x').subscribe((message) => console.log('sibling received'));
 
 sibling.create('x').publish({});
 
 // expect: sibling received
 ```
 
-### Scope Depth
+### Scope Depth: Arbitrary Nesting
 
-Scope hierarchies can be arbitrarily deep, and messages will make their way all the way to the top to find a handler.
+Scope hierarchies can be nested to any depth, with messages traversing the entire chain to find a suitable handler.
 
 ```typescript
+const parent: IMessageBroker<IContract> = messagebroker<IContract>();
 const distantChild = parent
-    .createScope()
-    .createScope()
-    ...
-    .createScope();
+  .createScope()
+  .createScope()
+  // ... more scopes
+  .createScope();
 
-parent.get('x').subscribe(message => console.log('parent received'));
-
+parent.get('x').subscribe((message) => console.log('parent received'));
 distantChild.create('x').publish({});
 
 // expect: parent received
 ```
 
-### Destroy
+### Destroying Scopes
 
-A MessageBroker instance can be destroyed.
-Destroying a MessageBroker will first destroy all of its children, it will dispose of all its channels, and finally remove itself from its parent.
-
-```typescript
-child.destroy();
-parent.children.contains(child); // expect: false
-```
+A `MessageBroker` instance, acting as a scope, can be destroyed using the `destroy()` method.
+This process removes the relationship to the parent of the instance, stopping any future messages from bubbling up.
