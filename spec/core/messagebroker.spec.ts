@@ -24,7 +24,7 @@ describe('MessageBroker', () => {
         mockRSVPMediator = Mock.create<RSVPMediator<any>>().setup(setupFunction('rsvp'));
     });
 
-    function getInstance<T = any>(): MessageBroker {
+    function getInstance<T = any>(): MessageBroker<T> {
         return new MessageBroker<T>(mockRSVPMediator.mock);
     }
 
@@ -365,6 +365,119 @@ describe('MessageBroker', () => {
                     .withFunction('rsvp')
                     .withParametersEqualTo('bootstrap', (callBack: any) => handler === callBack),
             ).wasCalledOnce();
+        });
+    });
+
+    describe('Scopes', () => {
+        it('should return a new messagebroker instance for each new scope', () => {
+            const instance = getInstance<IMySampleBroker>();
+            const scope = instance.createScope();
+            const scope2 = instance.createScope();
+
+            expect(scope).not.toBe(instance);
+            expect(scope).not.toBe(scope2);
+        });
+
+        it('should publish messages from child to parent if there is no handler on child', () => {
+            const parentMessages: Array<IMessage<string>> = [];
+            const parent = getInstance();
+            const child = parent.createScope();
+
+            parent.get('channel').subscribe((message) => parentMessages.push(message));
+            child.create('channel').publish('parent should handle this');
+
+            expect(parentMessages.length).toEqual(1);
+            verifyMessage(parentMessages[0], 'parent should handle this');
+        });
+
+        it('should not publish messages from child to parent if there is a handler on child', () => {
+            const parentMessages: Array<IMessage<string>> = [];
+            const childMessages: Array<IMessage<string>> = [];
+            const parent = getInstance();
+            const child = parent.createScope();
+
+            parent.get('channel').subscribe((message) => parentMessages.push(message));
+            child.get('channel').subscribe((message) => childMessages.push(message));
+
+            child.create('channel').publish('child should handle this');
+
+            expect(parentMessages.length).toEqual(0);
+
+            expect(childMessages.length).toEqual(1);
+            verifyMessage(childMessages[0], 'child should handle this');
+        });
+
+        it('should not publish messages to "sibling" scopes', () => {
+            const brotherMessages: Array<IMessage<string>> = [];
+            const sisterMessages: Array<IMessage<string>> = [];
+            const parent = getInstance();
+            const brother = parent.createScope();
+            const sister = parent.createScope();
+
+            brother.get('channel').subscribe((message) => brotherMessages.push(message));
+            sister.get('channel').subscribe((message) => sisterMessages.push(message));
+
+            brother.create('channel').publish('brother should get this');
+            sister.create('channel').publish('sister should get this');
+
+            expect(brotherMessages.length).toEqual(1);
+            verifyMessage(brotherMessages[0], 'brother should get this');
+
+            expect(sisterMessages.length).toEqual(1);
+            verifyMessage(sisterMessages[0], 'sister should get this');
+        });
+
+        describe('Destroy', () => {
+            it('should dispose of all subscriptions on that instance and its child', () => {
+                const instance = getInstance();
+                const instanceChannel = instance.create('yourChannel');
+                const child = instance.createScope();
+                const childChannel = instance.create('yourChannel');
+
+                instance.destroy(); // destroy the PARENT
+
+                const postDisposeInstanceChannel = instance.create('yourChannel');
+                const postDisposeChildChannel = child.create('yourChannel');
+
+                expect(postDisposeInstanceChannel).not.toBe(instanceChannel);
+                expect(postDisposeChildChannel).not.toBe(childChannel);
+            });
+
+            it('should prevent message propagation from happening', () => {
+                const childMessages: Array<IMessage<string>> = [];
+                const parentMessages: Array<IMessage<string>> = [];
+                const parent = getInstance();
+                const child = parent.createScope();
+
+                parent.get('channel').subscribe((message) => parentMessages.push(message));
+
+                child.destroy();
+
+                child.create('channel').publish('message');
+
+                expect(childMessages.length).toEqual(0);
+                expect(parentMessages.length).toEqual(0);
+            });
+
+            it('should destroy all cached messages on parent as well', () => {
+                const parent = getInstance();
+                const child = parent.createScope();
+
+                const parentChannel = parent.create('channel', { replayCacheSize: 2 });
+                const childChannel = child.create('channel', { replayCacheSize: 2 });
+
+                childChannel.publish('message one');
+                childChannel.publish('message two');
+
+                child.destroy(); // this should cancel the existing caching subscriptions
+
+                const parentMessages: Array<IMessage<string>> = [];
+                parentChannel.stream.subscribe((message) => parentMessages.push(message));
+
+                childChannel.publish('message three');
+
+                expect(parentMessages.length).toEqual(0);
+            });
         });
     });
 
