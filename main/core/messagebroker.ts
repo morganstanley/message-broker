@@ -33,11 +33,11 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
  * Represents a messagebroker. Using the 'new' operator is discouraged, instead use the messagebroker() function or dependency injection.
  */
 @Injectable()
-export class MessageBroker<T = any> implements IMessageBroker<T> {
+export class MessageBroker<T extends TParent = any, TParent = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
 
-    constructor(private rsvpMediator: RSVPMediator<T>) {}
+    constructor(private rsvpMediator: RSVPMediator<T>, private _parent?: MessageBroker<TParent>) {}
 
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
@@ -100,6 +100,29 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     }
 
     /**
+     * Creates a new scope with this instance of the MessageBroker as its parent.
+     * Messages from the scope will be passed to this instance if the child scope doesn't have a handler for it.
+     * @returns A new instance of the messagebroker
+     */
+    public createScope<K extends T>(): IMessageBroker<K> {
+        const instance = new MessageBroker<K, T>(this.rsvpMediator, this);
+        return instance;
+    }
+
+    /*
+     * Disposes of all message channels on this instance.
+     * It also destroys the connection between this and its parent so that messages will no longer propogate up.
+     */
+    public destroy(): void {
+        type Channels = (keyof typeof this.channelLookup)[];
+        (Object.keys(this.channelLookup) as Channels).forEach((channelName) => this.dispose(channelName));
+
+        if (this._parent) {
+            this._parent = undefined;
+        }
+    }
+
+    /**
      * Return a deferred observable as the channel config may have been updated before the subscription
      * @param channelName name of channel to subscribe to
      */
@@ -143,7 +166,16 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         }
 
         const publishFunction = (data?: T[K], type?: string): void => {
-            this.messagePublisher.next(this.createMessage(channelName, data, type));
+            // If there is any registered subscriber for the channel on this broker, then let those handle the message.
+            // Otherwise, pass it up the chain to the parent to see if they can handle it.
+            if (this.messagePublisher.observed) {
+                this.messagePublisher.next(this.createMessage(channelName, data, type));
+            } else if (this._parent) {
+                // It is possible that this channel being published on does NOT exist on the parent.
+                // In that case, the message will simply be passed up and ignored
+                // since no one higher up the chain will be able to create a subscriber for this channel.
+                this._parent.create(channelName as any).publish(data);
+            }
         };
 
         // Stream should return a deferred observable
@@ -179,5 +211,13 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         channel: IChannelModel<T[K]> | undefined,
     ): channel is RequiredPick<IChannelModel<T[K]>, 'config' | 'subscription'> {
         return channel != null && channel.subscription != null;
+    }
+
+    public isRoot(): boolean {
+        return this._parent === undefined;
+    }
+
+    protected get parent(): MessageBroker<TParent> | undefined {
+        return this._parent;
     }
 }

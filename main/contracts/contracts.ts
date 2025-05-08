@@ -96,6 +96,26 @@ export interface IMessageBroker<T> {
      * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type.
      */
     rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
+
+    /**
+     * Creates a new scope with this instance of the MessageBroker as its parent.
+     * Messages from the scope will be passed to this instance if the child scope doesn't have a handler for it.
+     * @returns A new instance of the messagebroker
+     */
+    createScope<K extends T>(): IMessageBroker<K>;
+
+    /*
+     * Disposes of all message channels on this instance.
+     * It also destroys the connection between this and its parent so that messages will no longer propogate up.
+     */
+    destroy(): void;
+
+    /**
+     * Returns true if this is root node of the tree of MessageBrokers.
+     * The root MessageBroker will not have a parent MessageBroker.
+     * @returns A boolean indicating whether this is the root or not
+     */
+    isRoot(): boolean;
 }
 
 /**
