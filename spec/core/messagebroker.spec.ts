@@ -155,9 +155,8 @@ describe('MessageBroker', () => {
 
         channel.publish();
 
-        // eslint-disable-next-line
         expect(message!).toBeDefined();
-        // eslint-disable-next-line
+
         expect(message!.data).toBeUndefined();
     });
 
@@ -183,6 +182,11 @@ describe('MessageBroker', () => {
             const numberChannel = messageBroker.create('channelTwo');
             const dateChannel = messageBroker.create('channelThree');
 
+            expect(stringChannel.publish).toBeDefined();
+            expect(numberChannel.publish).toBeDefined();
+            expect(dateChannel.publish).toBeDefined();
+
+            // These should not throw TypeScript compilation errors
             stringChannel.publish('aString');
             numberChannel.publish(123);
             dateChannel.publish(new Date());
@@ -197,6 +201,11 @@ describe('MessageBroker', () => {
             const numberChannel = messageBroker.get('channelTwo');
             const dateChannel = messageBroker.get('channelThree');
 
+            expect(stringChannel).toBeDefined();
+            expect(numberChannel).toBeDefined();
+            expect(dateChannel).toBeDefined();
+
+            // These should not throw TypeScript compilation errors
             stringChannel.subscribe((msg) => msg.data.length);
             numberChannel.subscribe((msg) => msg.data.toExponential());
             dateChannel.subscribe((msg) => msg.data.getMonth());

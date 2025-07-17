@@ -11,7 +11,7 @@ module.exports = function (config) {
 
         // frameworks to use
         // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-        frameworks: ['jasmine', 'source-map-support'],
+        frameworks: ['jasmine'],
 
         // test results reporter to use
         // possible values: 'dots', 'progress'
@@ -21,6 +21,12 @@ module.exports = function (config) {
         client: {
             clearContext: false, // leave Jasmine Spec Runner output visible in browser
             args: process.argv, //  store command line args so we can modify tests based on passed args
+            jasmine: {
+                random: false,
+                stopSpecOnExpectationFailure: false,
+                failFast: false,
+                timeout: 30000,
+            },
         },
 
         junitReporter: {
@@ -91,5 +97,6 @@ module.exports = function (config) {
         browserDisconnectTolerance: 3,
         browserDisconnectTimeout: 210000,
         browserNoActivityTimeout: 210000,
+        restartOnFileChange: false,
     });
 };
