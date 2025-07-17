@@ -1,7 +1,6 @@
 const path = require('path');
 const TsconfigPathsPlugin = require('tsconfig-paths-webpack-plugin');
 const baseConfig = require('./karma.base.conf.js');
-const CircularDependencyPlugin = require('circular-dependency-plugin');
 
 const testEntryFile = 'spec/test.ts';
 const configFile = 'tsconfig.json';
@@ -31,7 +30,7 @@ module.exports = function (config) {
         },
     ];
 
-    const plugins = [new CircularDependencyPlugin({ exclude: /node_modules/ })];
+    const plugins = [];
 
     if (coverage) {
         reporters.push('coverage-istanbul');
@@ -42,11 +41,12 @@ module.exports = function (config) {
                 loader: 'istanbul-instrumenter-loader',
                 options: {
                     esModules: true,
+                    preserveComments: true,
                 },
             },
             enforce: 'post',
             include: path.resolve('main'),
-            exclude: /.spec.ts$/,
+            exclude: [/.spec.ts$/, /node_modules/],
         });
     }
 
@@ -68,11 +68,15 @@ module.exports = function (config) {
             module: { rules },
             resolve: {
                 extensions: ['.ts', '.js'],
-                plugins: [new TsconfigPathsPlugin({ configFile })], // Supports non standard base url for absolute imports
+                plugins: [new TsconfigPathsPlugin({ configFile })],
             },
             mode: 'development',
-            devtool: 'inline-source-map',
+            devtool: false,
             plugins,
+            stats: 'errors-only',
+            performance: {
+                hints: false,
+            },
         },
     });
 };
