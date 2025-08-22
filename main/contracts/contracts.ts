@@ -96,6 +96,23 @@ export interface IMessageBroker<T> {
      * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type.
      */
     rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
+
+    /**
+     * Register an adapter with the message broker
+     * @param adapter The adapter to register
+     */
+    registerAdapter(adapter: IMessageBrokerAdapter<T>): void;
+
+    /**
+     * Unregister an adapter from the message broker
+     * @param adapterId The ID of the adapter to unregister
+     */
+    unregisterAdapter(adapterId: string): void;
+
+    /**
+     * Get all registered adapters
+     */
+    getAdapters(): IMessageBrokerAdapter<T>[];
 }
 
 /**
@@ -148,4 +165,45 @@ export interface IResponderRef {
      * Disconnect allows the responder to be disconnected from the list of available responders.
      */
     disconnect: () => void;
+}
+
+/**
+ * Base interface for message broker adapters that integrate with external messaging systems
+ */
+export interface IMessageBrokerAdapter<T> {
+    /**
+     * Unique identifier for the adapter
+     */
+    readonly id: string;
+    
+    /**
+     * Initialize the adapter
+     */
+    initialize(): Promise<void>;
+    
+    /**
+     * Connect to the external messaging system
+     */
+    connect(): Promise<void>;
+    
+    /**
+     * Disconnect from the external messaging system
+     */
+    disconnect(): Promise<void>;
+    
+    /**
+     * Send a message to the external system
+     */
+    sendMessage(channelName: keyof T, message: IMessage): Promise<void>;
+    
+    /**
+     * Subscribe to messages from the external system
+     * Returns an observable of messages received from external system
+     */
+    subscribeToMessages(channelName: keyof T): Observable<IMessage<T[any]>>;
+    
+    /**
+     * Check if the adapter is connected
+     */
+    isConnected(): boolean;
 }

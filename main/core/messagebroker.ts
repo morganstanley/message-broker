@@ -1,5 +1,5 @@
 import { get, Injectable } from '@morgan-stanley/needle';
-import { defer, Observable, Subject, Subscription } from 'rxjs';
+import { defer, merge, Observable, Subject, Subscription } from 'rxjs';
 import { filter, shareReplay } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 import { isCacheSizeEqual } from '../functions/helper.functions';
@@ -15,6 +15,7 @@ import {
     RSVPPayload,
     RSVPResponse,
     IResponderRef,
+    IMessageBrokerAdapter,
 } from '../contracts/contracts';
 import { RSVPMediator } from './rsvp-mediator';
 type ChannelModelLookup<T> = { [P in keyof T]?: IChannelModel<T[P]> };
@@ -36,6 +37,7 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
 export class MessageBroker<T = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
+    private adapters: IMessageBrokerAdapter<T>[] = [];
 
     constructor(private rsvpMediator: RSVPMediator<T>) {}
 
@@ -100,6 +102,32 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     }
 
     /**
+     * Register an adapter with the message broker
+     * @param adapter The adapter to register
+     */
+    public registerAdapter(adapter: IMessageBrokerAdapter<T>): void {
+        this.adapters.push(adapter);
+    }
+
+    /**
+     * Unregister an adapter from the message broker
+     * @param adapterId The ID of the adapter to unregister
+     */
+    public unregisterAdapter(adapterId: string): void {
+        const index = this.adapters.findIndex(adapter => adapter.id === adapterId);
+        if (index !== -1) {
+            this.adapters.splice(index, 1);
+        }
+    }
+
+    /**
+     * Get all registered adapters
+     */
+    public getAdapters(): IMessageBrokerAdapter<T>[] {
+        return [...this.adapters];
+    }
+
+    /**
      * Return a deferred observable as the channel config may have been updated before the subscription
      * @param channelName name of channel to subscribe to
      */
@@ -134,7 +162,11 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
 
     private createChannelImpl<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannelModel<T[K]> {
         let subscription: Subscription | undefined;
-        let observable = this.messagePublisher.pipe(filter((message) => message.channelName === channelName));
+        let adapterObservables = this.adapters.map(adapter => adapter.subscribeToMessages(channelName));
+        let observable = merge(
+            this.messagePublisher.pipe(filter((message) => message.channelName === channelName)),
+            ...adapterObservables
+        );
 
         const replayCacheSize = config?.replayCacheSize;
         if (replayCacheSize) {
@@ -143,7 +175,11 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         }
 
         const publishFunction = (data?: T[K], type?: string): void => {
-            this.messagePublisher.next(this.createMessage(channelName, data, type));
+            const message = this.createMessage(channelName, data, type);
+            this.messagePublisher.next(message);
+            this.adapters.forEach(adapter => {
+                adapter.sendMessage(channelName, message);
+            });
         };
 
         // Stream should return a deferred observable
