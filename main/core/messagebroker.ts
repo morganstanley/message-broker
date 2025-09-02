@@ -1,6 +1,6 @@
 import { get, Injectable } from '@morgan-stanley/needle';
 import { defer, merge, Observable, Subject, Subscription } from 'rxjs';
-import { filter, shareReplay, catchError } from 'rxjs/operators';
+import { filter, shareReplay } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 import { isCacheSizeEqual } from '../functions/helper.functions';
 import {
@@ -187,21 +187,15 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
             const message = this.createMessage(channelName, data, type);
             this.messagePublisher.next(message);
             this.adapters.forEach((adapter) => {
-                adapter
-                    .sendMessage(channelName, message)
-                    .pipe(
-                        catchError((error) => {
-                            this.errorStream.next({
-                                adapterId: adapter.id,
-                                channelName,
-                                message,
-                                error,
-                                timestamp: Date.now(),
-                            });
-                            return [];
-                        }),
-                    )
-                    .subscribe();
+                adapter.sendMessage(channelName, message).catch((error) => {
+                    this.errorStream.next({
+                        adapterId: adapter.id,
+                        channelName,
+                        message,
+                        error,
+                        timestamp: Date.now(),
+                    });
+                });
             });
         };
 

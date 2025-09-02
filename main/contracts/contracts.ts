@@ -183,27 +183,27 @@ export interface IMessageBrokerAdapter<T> {
 
     /**
      * Initialize the adapter
-     * Returns an observable that completes when initialization is done
+     * Returns a promise that resolves when initialization is done
      */
-    initialize(): Observable<void>;
+    initialize(): Promise<void>;
 
     /**
      * Connect to the external messaging system
-     * Returns an observable that completes when connection is established
+     * Returns a promise that resolves when connection is established
      */
-    connect(): Observable<void>;
+    connect(): Promise<void>;
 
     /**
      * Disconnect from the external messaging system
-     * Returns an observable that completes when disconnection is done
+     * Returns a promise that resolves when disconnection is done
      */
-    disconnect(): Observable<void>;
+    disconnect(): Promise<void>;
 
     /**
      * Send a message to the external system
-     * Returns an observable that completes when message is sent
+     * Returns a promise that resolves when message is sent
      */
-    sendMessage(channelName: keyof T, message: IMessage): Observable<void>;
+    sendMessage(channelName: keyof T, message: IMessage): Promise<void>;
 
     /**
      * Subscribe to messages from the external system
