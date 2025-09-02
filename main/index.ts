@@ -11,4 +11,5 @@ export {
     RSVPHandler,
     RSVPResponse,
     IMessageBrokerAdapter,
+    IAdapterError,
 } from './contracts/contracts';

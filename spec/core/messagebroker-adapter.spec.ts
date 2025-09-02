@@ -1,9 +1,8 @@
-
 import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
-import { Observable, Subject } from 'rxjs';
+import { Observable, Subject, of, throwError } from 'rxjs';
 import { MessageBroker } from '../../main/core/messagebroker';
 import { RSVPMediator } from '../../main/core/rsvp-mediator';
-import { IMessage, IMessageBroker, IMessageBrokerAdapter } from '../../main/contracts/contracts';
+import { IMessage, IMessageBroker, IMessageBrokerAdapter, IAdapterError } from '../../main/contracts/contracts';
 
 interface ITestChannels {
     'test-channel': {
@@ -16,26 +15,35 @@ interface ITestChannels {
 
 class MockAdapter implements IMessageBrokerAdapter<ITestChannels> {
     public readonly id: string = 'mock-adapter';
-    
+
     private connected: boolean = false;
     private messageSubjects: Map<string, Subject<IMessage>> = new Map();
     public sentMessages: Array<{ channel: keyof ITestChannels; message: IMessage }> = [];
+    public shouldFailSendMessage: boolean = false;
 
-    async initialize(): Promise<void> {}
-
-    async connect(): Promise<void> {
-        this.connected = true;
+    initialize(): Observable<void> {
+        return of(undefined);
     }
 
-    async disconnect(): Promise<void> {
+    connect(): Observable<void> {
+        this.connected = true;
+        return of(undefined);
+    }
+
+    disconnect(): Observable<void> {
         this.connected = false;
         this.messageSubjects.clear();
+        return of(undefined);
     }
 
-    async sendMessage(channelName: keyof ITestChannels, message: IMessage): Promise<void> {
+    sendMessage(channelName: keyof ITestChannels, message: IMessage): Observable<void> {
+        if (this.shouldFailSendMessage) {
+            return throwError(() => new Error('Mock adapter send failure'));
+        }
         if (this.connected) {
             this.sentMessages.push({ channel: channelName, message });
         }
+        return of(undefined);
     }
 
     subscribeToMessages(channelName: keyof ITestChannels): Observable<IMessage> {
@@ -59,7 +67,7 @@ class MockAdapter implements IMessageBrokerAdapter<ITestChannels> {
 
 describe('MessageBroker Adapter', () => {
     let broker: IMessageBroker<ITestChannels>;
-    let mockRSVPMediator: IMocked<RSVPMediator<ITestChannels>>
+    let mockRSVPMediator: IMocked<RSVPMediator<ITestChannels>>;
     let mockAdapter: MockAdapter;
 
     beforeEach(() => {
@@ -74,7 +82,7 @@ describe('MessageBroker Adapter', () => {
 
     it('should register adapter successfully', () => {
         broker.registerAdapter(mockAdapter);
-        
+
         const adapters = broker.getAdapters();
         expect(adapters).toContain(mockAdapter);
         expect(adapters.length).toBe(1);
@@ -83,73 +91,106 @@ describe('MessageBroker Adapter', () => {
     it('should unregister adapter successfully', () => {
         broker.registerAdapter(mockAdapter);
         broker.unregisterAdapter(mockAdapter.id);
-        
+
         const adapters = broker.getAdapters();
         expect(adapters.length).toBe(0);
     });
 
-    it('should initialize and connect adapter', async () => {
-        await mockAdapter.initialize();
-        await mockAdapter.connect();
-        
-        expect(mockAdapter.isConnected()).toBe(true);
-    });
-
-    it('should send messages to connected adapter', async () => {
-        await mockAdapter.initialize();
-        await mockAdapter.connect();
-        broker.registerAdapter(mockAdapter);
-
-        broker.create('test-channel').publish({ test: 'data' });
-
-        expect(mockAdapter.sentMessages.length).toBe(1);
-        expect(mockAdapter.sentMessages[0].channel).toBe('test-channel');
-        expect(mockAdapter.sentMessages[0].message.data).toEqual({ test: 'data' });
-    });
-
-    it('should receive messages from adapter subscription', async () => {
-        await mockAdapter.initialize();
-        await mockAdapter.connect();
-        broker.registerAdapter(mockAdapter);
-        
-        const messagePromise = new Promise<void>((resolve) => {
-            broker.get('test-channel').subscribe((message) => {
-                expect(message.data).toEqual({ test: 'external-data' });
-                resolve();
+    it('should initialize and connect adapter', (done) => {
+        mockAdapter.initialize().subscribe(() => {
+            mockAdapter.connect().subscribe(() => {
+                expect(mockAdapter.isConnected()).toBe(true);
+                done();
             });
         });
-
-        const externalMessage: IMessage = {
-            channelName: 'test-channel',
-            data: { test: 'external-data' },
-            timestamp: Date.now(),
-            id: 'external-id',
-            isHandled: false
-        };
-
-        mockAdapter.simulateIncomingMessage('test-channel', externalMessage);
-        
-        await messagePromise;
     });
 
-    it('should not send messages to disconnected adapter', async () => {
-        await mockAdapter.initialize();
-        await mockAdapter.connect();
-        await mockAdapter.disconnect();
+    it('should send messages to connected adapter', (done) => {
+        mockAdapter.initialize().subscribe(() => {
+            mockAdapter.connect().subscribe(() => {
+                broker.registerAdapter(mockAdapter);
 
-        broker.create('test-channel').publish({ test: 'data' });
+                broker.create('test-channel').publish({ test: 'data' });
 
-        expect(mockAdapter.sentMessages.length).toBe(0);
+                setTimeout(() => {
+                    expect(mockAdapter.sentMessages.length).toBe(1);
+                    expect(mockAdapter.sentMessages[0].channel).toBe('test-channel');
+                    expect(mockAdapter.sentMessages[0].message.data).toEqual({ test: 'data' });
+                    done();
+                }, 10);
+            });
+        });
     });
 
-    it('should disconnect and clear message subjects', async () => {
-        await mockAdapter.initialize();
-        await mockAdapter.connect();
-        
-        broker.get('test-channel').subscribe();
-        
-        await mockAdapter.disconnect();
-        
-        expect(mockAdapter.isConnected()).toBe(false);
+    it('should receive messages from adapter subscription', (done) => {
+        mockAdapter.initialize().subscribe(() => {
+            mockAdapter.connect().subscribe(() => {
+                broker.registerAdapter(mockAdapter);
+
+                broker.get('test-channel').subscribe((message) => {
+                    expect(message.data).toEqual({ test: 'external-data' });
+                    done();
+                });
+
+                const externalMessage: IMessage = {
+                    channelName: 'test-channel',
+                    data: { test: 'external-data' },
+                    timestamp: Date.now(),
+                    id: 'external-id',
+                    isHandled: false,
+                };
+
+                mockAdapter.simulateIncomingMessage('test-channel', externalMessage);
+            });
+        });
+    });
+
+    it('should not send messages to disconnected adapter', (done) => {
+        mockAdapter.initialize().subscribe(() => {
+            mockAdapter.connect().subscribe(() => {
+                mockAdapter.disconnect().subscribe(() => {
+                    broker.registerAdapter(mockAdapter);
+
+                    broker.create('test-channel').publish({ test: 'data' });
+
+                    setTimeout(() => {
+                        expect(mockAdapter.sentMessages.length).toBe(0);
+                        done();
+                    }, 10);
+                });
+            });
+        });
+    });
+
+    it('should disconnect and clear message subjects', (done) => {
+        mockAdapter.initialize().subscribe(() => {
+            mockAdapter.connect().subscribe(() => {
+                broker.get('test-channel').subscribe();
+
+                mockAdapter.disconnect().subscribe(() => {
+                    expect(mockAdapter.isConnected()).toBe(false);
+                    done();
+                });
+            });
+        });
+    });
+
+    it('should emit error when adapter sendMessage fails', (done) => {
+        mockAdapter.initialize().subscribe(() => {
+            mockAdapter.connect().subscribe(() => {
+                mockAdapter.shouldFailSendMessage = true;
+                broker.registerAdapter(mockAdapter);
+
+                broker.getErrorStream().subscribe((error: IAdapterError<ITestChannels>) => {
+                    expect(error.adapterId).toBe('mock-adapter');
+                    expect(error.channelName).toBe('test-channel');
+                    expect(error.message.data).toEqual({ test: 'data' });
+                    expect(error.error.message).toBe('Mock adapter send failure');
+                    done();
+                });
+
+                broker.create('test-channel').publish({ test: 'data' });
+            });
+        });
     });
 });

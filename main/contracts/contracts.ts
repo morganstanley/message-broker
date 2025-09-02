@@ -113,6 +113,11 @@ export interface IMessageBroker<T> {
      * Get all registered adapters
      */
     getAdapters(): IMessageBrokerAdapter<T>[];
+
+    /**
+     * Get error stream for adapter failures
+     */
+    getErrorStream(): Observable<IAdapterError<T>>;
 }
 
 /**
@@ -175,35 +180,69 @@ export interface IMessageBrokerAdapter<T> {
      * Unique identifier for the adapter
      */
     readonly id: string;
-    
+
     /**
      * Initialize the adapter
+     * Returns an observable that completes when initialization is done
      */
-    initialize(): Promise<void>;
-    
+    initialize(): Observable<void>;
+
     /**
      * Connect to the external messaging system
+     * Returns an observable that completes when connection is established
      */
-    connect(): Promise<void>;
-    
+    connect(): Observable<void>;
+
     /**
      * Disconnect from the external messaging system
+     * Returns an observable that completes when disconnection is done
      */
-    disconnect(): Promise<void>;
-    
+    disconnect(): Observable<void>;
+
     /**
      * Send a message to the external system
+     * Returns an observable that completes when message is sent
      */
-    sendMessage(channelName: keyof T, message: IMessage): Promise<void>;
-    
+    sendMessage(channelName: keyof T, message: IMessage): Observable<void>;
+
     /**
      * Subscribe to messages from the external system
      * Returns an observable of messages received from external system
      */
     subscribeToMessages(channelName: keyof T): Observable<IMessage<T[any]>>;
-    
+
     /**
      * Check if the adapter is connected
      */
     isConnected(): boolean;
+}
+
+/**
+ * Error information for adapter failures
+ */
+export interface IAdapterError<T> {
+    /**
+     * The adapter that failed
+     */
+    adapterId: string;
+
+    /**
+     * The channel name where the error occurred
+     */
+    channelName: keyof T;
+
+    /**
+     * The message that failed to send
+     */
+    message: IMessage;
+
+    /**
+     * The error that occurred
+     */
+    error: Error;
+
+    /**
+     * Timestamp when the error occurred
+     */
+    timestamp: number;
 }
