@@ -83,6 +83,6 @@
     },
     "dependencies": {
         "@morgan-stanley/needle": "^0.3.33",
-        "uuid": "^11.0.3"
+        "uuid": "^12.0.0"
     }
 }
