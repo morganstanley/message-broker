@@ -6,8 +6,6 @@ dist/spec/
 .vscode/
 .github/**/*
 
-karma.conf.js
-karma.base.conf.js
 prettier.config.js
 .eslintrc.js
 .travis.yml
