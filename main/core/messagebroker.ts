@@ -1,5 +1,5 @@
 import { get, Injectable } from '@morgan-stanley/needle';
-import { defer, Observable, Subject, Subscription } from 'rxjs';
+import { defer, merge, Observable, Subject, Subscription } from 'rxjs';
 import { filter, shareReplay } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 import { isCacheSizeEqual } from '../functions/helper.functions';
@@ -15,6 +15,8 @@ import {
     RSVPPayload,
     RSVPResponse,
     IResponderRef,
+    IMessageBrokerAdapter,
+    IAdapterError,
 } from '../contracts/contracts';
 import { RSVPMediator } from './rsvp-mediator';
 type ChannelModelLookup<T> = { [P in keyof T]?: IChannelModel<T[P]> };
@@ -36,6 +38,8 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
 export class MessageBroker<T = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
+    private adapters: Record<string, IMessageBrokerAdapter<T>> = {};
+    private errorStream = new Subject<IAdapterError<T>>();
 
     constructor(private rsvpMediator: RSVPMediator<T>) {}
 
@@ -100,6 +104,39 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     }
 
     /**
+     * Register an adapter with the message broker
+     * @param adapter The adapter to register
+     * @returns The ID of the registered adapter
+     */
+    public registerAdapter(adapter: IMessageBrokerAdapter<T>): string {
+        const id = uuid();
+        this.adapters[id] = adapter;
+        return id;
+    }
+
+    /**
+     * Unregister an adapter from the message broker
+     * @param adapterId The ID of the adapter to unregister
+     */
+    public unregisterAdapter(adapterId: string): void {
+        delete this.adapters[adapterId];
+    }
+
+    /**
+     * Get all registered adapters
+     */
+    public getAdapters(): IMessageBrokerAdapter<T>[] {
+        return Object.values(this.adapters);
+    }
+
+    /**
+     * Get error stream for adapter failures
+     */
+    public getErrorStream(): Observable<IAdapterError<T>> {
+        return this.errorStream.asObservable();
+    }
+
+    /**
      * Return a deferred observable as the channel config may have been updated before the subscription
      * @param channelName name of channel to subscribe to
      */
@@ -134,7 +171,13 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
 
     private createChannelImpl<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannelModel<T[K]> {
         let subscription: Subscription | undefined;
-        let observable = this.messagePublisher.pipe(filter((message) => message.channelName === channelName));
+        const adapterObservables = Object.values(this.adapters).map((adapter) =>
+            adapter.subscribeToMessages(channelName),
+        );
+        let observable = merge(
+            this.messagePublisher.pipe(filter((message) => message.channelName === channelName)),
+            ...adapterObservables,
+        );
 
         const replayCacheSize = config?.replayCacheSize;
         if (replayCacheSize) {
@@ -143,7 +186,19 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         }
 
         const publishFunction = (data?: T[K], type?: string): void => {
-            this.messagePublisher.next(this.createMessage(channelName, data, type));
+            const message = this.createMessage(channelName, data, type);
+            this.messagePublisher.next(message);
+            Object.entries(this.adapters).forEach(([id, adapter]) => {
+                adapter.sendMessage(channelName, message).catch((error) => {
+                    this.errorStream.next({
+                        adapterId: id,
+                        channelName,
+                        message,
+                        error,
+                        timestamp: Date.now(),
+                    });
+                });
+            });
         };
 
         // Stream should return a deferred observable
