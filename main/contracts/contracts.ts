@@ -100,8 +100,9 @@ export interface IMessageBroker<T> {
     /**
      * Register an adapter with the message broker
      * @param adapter The adapter to register
+     * @returns The ID of the registered adapter
      */
-    registerAdapter(adapter: IMessageBrokerAdapter<T>): void;
+    registerAdapter(adapter: IMessageBrokerAdapter<T>): string;
 
     /**
      * Unregister an adapter from the message broker
@@ -176,11 +177,6 @@ export interface IResponderRef {
  * Base interface for message broker adapters that integrate with external messaging systems
  */
 export interface IMessageBrokerAdapter<T> {
-    /**
-     * Unique identifier for the adapter
-     */
-    readonly id: string;
-
     /**
      * Initialize the adapter
      * Returns a promise that resolves when initialization is done

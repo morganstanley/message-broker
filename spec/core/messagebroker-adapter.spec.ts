@@ -14,8 +14,6 @@ interface ITestChannels {
 }
 
 class MockAdapter implements IMessageBrokerAdapter<ITestChannels> {
-    public readonly id: string = 'mock-adapter';
-
     private connected: boolean = false;
     private messageSubjects: Map<string, Subject<IMessage>> = new Map();
     public sentMessages: Array<{ channel: keyof ITestChannels; message: IMessage }> = [];
@@ -89,8 +87,8 @@ describe('MessageBroker Adapter', () => {
     });
 
     it('should unregister adapter successfully', () => {
-        broker.registerAdapter(mockAdapter);
-        broker.unregisterAdapter(mockAdapter.id);
+        const adapterId = broker.registerAdapter(mockAdapter);
+        broker.unregisterAdapter(adapterId);
 
         const adapters = broker.getAdapters();
         expect(adapters.length).toBe(0);
@@ -165,10 +163,10 @@ describe('MessageBroker Adapter', () => {
         mockAdapter.initialize().then(() => {
             mockAdapter.connect().then(() => {
                 mockAdapter.shouldFailSendMessage = true;
-                broker.registerAdapter(mockAdapter);
+                const adapterId = broker.registerAdapter(mockAdapter);
 
                 broker.getErrorStream().subscribe((error: IAdapterError<ITestChannels>) => {
-                    expect(error.adapterId).toBe('mock-adapter');
+                    expect(error.adapterId).toBe(adapterId);
                     expect(error.channelName).toBe('test-channel');
                     expect(error.message.data).toEqual({ test: 'data' });
                     expect(error.error.message).toBe('Mock adapter send failure');

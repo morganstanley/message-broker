@@ -38,7 +38,7 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
 export class MessageBroker<T = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
-    private adapters: IMessageBrokerAdapter<T>[] = [];
+    private adapters: Record<string, IMessageBrokerAdapter<T>> = {};
     private errorStream = new Subject<IAdapterError<T>>();
 
     constructor(private rsvpMediator: RSVPMediator<T>) {}
@@ -106,9 +106,12 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     /**
      * Register an adapter with the message broker
      * @param adapter The adapter to register
+     * @returns The ID of the registered adapter
      */
-    public registerAdapter(adapter: IMessageBrokerAdapter<T>): void {
-        this.adapters.push(adapter);
+    public registerAdapter(adapter: IMessageBrokerAdapter<T>): string {
+        const id = uuid();
+        this.adapters[id] = adapter;
+        return id;
     }
 
     /**
@@ -116,17 +119,14 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @param adapterId The ID of the adapter to unregister
      */
     public unregisterAdapter(adapterId: string): void {
-        const index = this.adapters.findIndex((adapter) => adapter.id === adapterId);
-        if (index !== -1) {
-            this.adapters.splice(index, 1);
-        }
+        delete this.adapters[adapterId];
     }
 
     /**
      * Get all registered adapters
      */
     public getAdapters(): IMessageBrokerAdapter<T>[] {
-        return [...this.adapters];
+        return Object.values(this.adapters);
     }
 
     /**
@@ -171,7 +171,9 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
 
     private createChannelImpl<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannelModel<T[K]> {
         let subscription: Subscription | undefined;
-        const adapterObservables = this.adapters.map((adapter) => adapter.subscribeToMessages(channelName));
+        const adapterObservables = Object.values(this.adapters).map((adapter) =>
+            adapter.subscribeToMessages(channelName),
+        );
         let observable = merge(
             this.messagePublisher.pipe(filter((message) => message.channelName === channelName)),
             ...adapterObservables,
@@ -186,10 +188,10 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         const publishFunction = (data?: T[K], type?: string): void => {
             const message = this.createMessage(channelName, data, type);
             this.messagePublisher.next(message);
-            this.adapters.forEach((adapter) => {
+            Object.entries(this.adapters).forEach(([id, adapter]) => {
                 adapter.sendMessage(channelName, message).catch((error) => {
                     this.errorStream.next({
-                        adapterId: adapter.id,
+                        adapterId: id,
                         channelName,
                         message,
                         error,
