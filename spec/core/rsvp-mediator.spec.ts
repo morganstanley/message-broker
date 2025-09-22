@@ -1,16 +1,8 @@
-import { IMocked, Mock, replacePropertiesBeforeEach, setupFunction } from '@morgan-stanley/ts-mocking-bird';
 import { IRSVPConfig, RSVPResponse } from '../../main/contracts/contracts';
 import { RSVPMediator } from '../../main/core/rsvp-mediator';
-import * as uuid from 'uuid';
 
+vi.mock('uuid', () => ({ v4: () => vi.fn().mockReturnValue('mockedId') }));
 describe('RSVPMediator', () => {
-    let mockUuidPackage: IMocked<typeof uuid>;
-
-    replacePropertiesBeforeEach(() => {
-        mockUuidPackage = Mock.create<typeof uuid>().setup(setupFunction('v4', (() => 'mockedId') as any));
-        return [{ package: uuid, mocks: { ...mockUuidPackage.mock } }];
-    });
-
     function getInstance<T = any>(): RSVPMediator<T> {
         return new RSVPMediator<T>();
     }
@@ -67,7 +59,7 @@ describe('RSVPMediator', () => {
             expect(results.length).toBe(1);
             expect(results[0]).toBe('Response 1');
         } else {
-            fail('wrong type returned from test');
+            assert.fail('wrong type returned from test');
         }
     });
 
@@ -85,7 +77,7 @@ describe('RSVPMediator', () => {
             expect(results.length).toBe(0);
             expect(invoked).toBeFalsy();
         } else {
-            fail('wrong type returned from test');
+            assert.fail('wrong type returned from test');
         }
     });
 
@@ -101,7 +93,7 @@ describe('RSVPMediator', () => {
             expect(responder.id).toBeDefined();
             expect(responder.disconnect).toBeDefined();
         } else {
-            fail('wrong type returned from test');
+            assert.fail('wrong type returned from test');
         }
     });
 
@@ -115,7 +107,7 @@ describe('RSVPMediator', () => {
         if (!Array.isArray(responder)) {
             responder.disconnect();
         } else {
-            fail('wrong type returned from test');
+            assert.fail('wrong type returned from test');
         }
 
         const results = instance.rsvp('rsvpChannel', { data: 'bar' });
@@ -142,17 +134,11 @@ describe('RSVPMediator', () => {
 
     describe('Non matching', () => {
         let id = 0;
-        replacePropertiesBeforeEach(() => {
-            mockUuidPackage = Mock.create<typeof uuid>().setup(
-                setupFunction('v4', (() => {
-                    id++;
-                    return id;
-                }) as any),
-            );
-            return [{ package: uuid, mocks: { ...mockUuidPackage.mock } }];
+        beforeAll(() => {
+            vi.doMock('uuid', () => ({ v4: () => ++id }));
         });
 
-        it('should not disconnect responders when disconnecting', () => {
+        it('should not disconnect responders when disconnecting', async () => {
             const instance = getInstance<MockConfig>();
             let responder2Count = 0;
 
