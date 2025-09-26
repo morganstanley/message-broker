@@ -202,10 +202,10 @@ export interface IMessageBrokerAdapter<T> {
     sendMessage(channelName: keyof T, message: IMessage): Promise<void>;
 
     /**
-     * Subscribe to messages from the external system
-     * Returns an observable of messages received from external system
+     * Get all messages from the external system
+     * Returns an observable of all messages received from external system
      */
-    subscribeToMessages(channelName: keyof T): Observable<IMessage<T[any]>>;
+    getMessageStream(): Observable<IMessage<T[any]>>;
 
     /**
      * Check if the adapter is connected

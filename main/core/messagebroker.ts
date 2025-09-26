@@ -20,6 +20,8 @@ import {
 } from '../contracts/contracts';
 import { RSVPMediator } from './rsvp-mediator';
 type ChannelModelLookup<T> = { [P in keyof T]?: IChannelModel<T[P]> };
+type AdapterObservableLookup<T> = { [P in keyof T]?: { [adapterId: string]: Observable<IMessage<any>> } };
+type AdapterStreamLookup = { [adapterId: string]: Observable<IMessage<any>> };
 
 /**
  * Creates and returns a single messagebroker instance. This is the recommend approach to resolve an instance of the messagebroker
@@ -40,6 +42,8 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     private messagePublisher = new Subject<IMessage<any>>();
     private adapters: Record<string, IMessageBrokerAdapter<T>> = {};
     private errorStream = new Subject<IAdapterError<T>>();
+    private adapterObservables: AdapterObservableLookup<T> = {};
+    private adapterStreams: AdapterStreamLookup = {};
 
     constructor(private rsvpMediator: RSVPMediator<T>) {}
 
@@ -100,6 +104,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         if (this.isChannelConfiguredWithCaching(channel)) {
             channel.subscription.unsubscribe();
         }
+        this.cleanupAdapterObservables(channelName);
         delete this.channelLookup[channelName];
     }
 
@@ -120,6 +125,15 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      */
     public unregisterAdapter(adapterId: string): void {
         delete this.adapters[adapterId];
+        delete this.adapterStreams[adapterId];
+
+        // Clean up channel-specific observables for this adapter
+        Object.keys(this.adapterObservables).forEach((channelName) => {
+            const channelObs = this.adapterObservables[channelName as keyof T];
+            if (channelObs) {
+                delete channelObs[adapterId];
+            }
+        });
     }
 
     /**
@@ -171,9 +185,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
 
     private createChannelImpl<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannelModel<T[K]> {
         let subscription: Subscription | undefined;
-        const adapterObservables = Object.values(this.adapters).map((adapter) =>
-            adapter.subscribeToMessages(channelName),
-        );
+        const adapterObservables = this.getOrCreateAdapterObservables(channelName);
         let observable = merge(
             this.messagePublisher.pipe(filter((message) => message.channelName === channelName)),
             ...adapterObservables,
@@ -228,6 +240,40 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
             id: uuid(),
             isHandled: false,
         };
+    }
+
+    private getOrCreateAdapterObservables<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>>[] {
+        if (!this.adapterObservables[channelName]) {
+            this.adapterObservables[channelName] = {};
+        }
+
+        const channelAdapterObs = this.adapterObservables[channelName]!;
+        const adapterObservables: Observable<IMessage<T[K]>>[] = [];
+
+        Object.entries(this.adapters).forEach(([adapterId, adapter]) => {
+            if (!channelAdapterObs[adapterId]) {
+                // Get the raw stream for this adapter (cached)
+                if (!this.adapterStreams[adapterId]) {
+                    this.adapterStreams[adapterId] = adapter.getMessageStream();
+                }
+
+                // Create filtered observable for this channel
+                const filteredObservable = this.adapterStreams[adapterId].pipe(
+                    filter((message) => message.channelName === channelName),
+                );
+
+                channelAdapterObs[adapterId] = filteredObservable;
+                adapterObservables.push(filteredObservable);
+            } else {
+                adapterObservables.push(channelAdapterObs[adapterId]);
+            }
+        });
+
+        return adapterObservables;
+    }
+
+    private cleanupAdapterObservables<K extends keyof T>(channelName: K): void {
+        delete this.adapterObservables[channelName];
     }
 
     private isChannelConfiguredWithCaching<K extends keyof T>(

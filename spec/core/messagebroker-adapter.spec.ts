@@ -15,7 +15,7 @@ interface ITestChannels {
 
 class MockAdapter implements IMessageBrokerAdapter<ITestChannels> {
     private connected: boolean = false;
-    private messageSubjects: Map<string, Subject<IMessage>> = new Map();
+    private messageSubject = new Subject<IMessage>();
     public sentMessages: Array<{ channel: keyof ITestChannels; message: IMessage }> = [];
     public shouldFailSendMessage: boolean = false;
 
@@ -30,7 +30,6 @@ class MockAdapter implements IMessageBrokerAdapter<ITestChannels> {
 
     disconnect(): Promise<void> {
         this.connected = false;
-        this.messageSubjects.clear();
         return Promise.resolve();
     }
 
@@ -44,22 +43,16 @@ class MockAdapter implements IMessageBrokerAdapter<ITestChannels> {
         return Promise.resolve();
     }
 
-    subscribeToMessages(channelName: keyof ITestChannels): Observable<IMessage> {
-        if (!this.messageSubjects.has(channelName)) {
-            this.messageSubjects.set(channelName, new Subject<IMessage>());
-        }
-        return this.messageSubjects.get(channelName)!.asObservable();
+    getMessageStream(): Observable<IMessage> {
+        return this.messageSubject.asObservable();
     }
 
     isConnected(): boolean {
         return this.connected;
     }
 
-    public simulateIncomingMessage(channelName: keyof ITestChannels, message: IMessage): void {
-        const subject = this.messageSubjects.get(channelName);
-        if (subject) {
-            subject.next(message);
-        }
+    public simulateIncomingMessage(message: IMessage): void {
+        this.messageSubject.next(message);
     }
 }
 
@@ -132,7 +125,7 @@ describe('MessageBroker Adapter', () => {
                     isHandled: false,
                 };
 
-                mockAdapter.simulateIncomingMessage('test-channel', externalMessage);
+                mockAdapter.simulateIncomingMessage(externalMessage);
             });
         });
     });
@@ -174,6 +167,47 @@ describe('MessageBroker Adapter', () => {
                 });
 
                 broker.create('test-channel').publish({ test: 'data' });
+            });
+        });
+    });
+
+    it('should reuse adapter subscriptions when upgrading channel from non-cached to cached', (done) => {
+        mockAdapter.initialize().then(() => {
+            mockAdapter.connect().then(() => {
+                broker.registerAdapter(mockAdapter);
+
+                // Spy on getMessageStream to count how many times it's called
+                let subscriptionCallCount = 0;
+                const originalGetMessageStream = mockAdapter.getMessageStream;
+                spyOn(mockAdapter, 'getMessageStream').and.callFake(() => {
+                    subscriptionCallCount++;
+                    return originalGetMessageStream.call(mockAdapter);
+                });
+
+                // Create channel without config first
+                broker.create('test-channel');
+
+                // Create same channel with config - should reuse adapter subscription
+                broker.create('test-channel', { replayCacheSize: 1 });
+
+                // Verify getMessageStream was only called once
+                expect(subscriptionCallCount).toBe(1);
+
+                // Verify channel still works with external messages
+                broker.get('test-channel').subscribe((message) => {
+                    expect(message.data).toEqual({ test: 'external-data-cached' });
+                    done();
+                });
+
+                const externalMessage: IMessage = {
+                    channelName: 'test-channel',
+                    data: { test: 'external-data-cached' },
+                    timestamp: Date.now(),
+                    id: 'external-id-cached',
+                    isHandled: false,
+                };
+
+                mockAdapter.simulateIncomingMessage(externalMessage);
             });
         });
     });
