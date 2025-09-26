@@ -10,4 +10,6 @@ export {
     RSVPPayload,
     RSVPHandler,
     RSVPResponse,
+    IMessageBrokerAdapter,
+    IAdapterError,
 } from './contracts/contracts';
