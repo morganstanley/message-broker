@@ -249,7 +249,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
             this.adapterObservables[channelName] = {};
         }
 
-        const channelAdapterObs = this.adapterObservables[channelName]!;
+        const channelAdapterObs = this.adapterObservables[channelName] ?? (this.adapterObservables[channelName] = {});
         const adapterObservables: Observable<IMessage<T[K]>>[] = [];
 
         Object.entries(this.adapters).forEach(([adapterId, adapter]) => {
