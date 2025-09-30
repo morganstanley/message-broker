@@ -245,10 +245,6 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     }
 
     private getOrCreateAdapterObservables<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>>[] {
-        if (!this.adapterObservables[channelName]) {
-            this.adapterObservables[channelName] = {};
-        }
-
         const channelAdapterObs = this.adapterObservables[channelName] ?? (this.adapterObservables[channelName] = {});
         const adapterObservables: Observable<IMessage<T[K]>>[] = [];
 
