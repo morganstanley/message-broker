@@ -23,6 +23,8 @@ type ChannelModelLookup<T> = { [P in keyof T]?: IChannelModel<T[P]> };
 type AdapterObservableLookup<T> = { [P in keyof T]?: { [adapterId: string]: Observable<IMessage<any>> } };
 type AdapterStreamLookup = { [adapterId: string]: Observable<IMessage<any>> };
 
+type AdapterId = string;
+
 /**
  * Creates and returns a single messagebroker instance. This is the recommend approach to resolve an instance of the messagebroker
  * when not using dependency injection.
@@ -40,7 +42,7 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
 export class MessageBroker<T = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
-    private adapters: Record<string, IMessageBrokerAdapter<T>> = {};
+    private adapters: Record<AdapterId, IMessageBrokerAdapter<T>> = {};
     private errorStream = new Subject<IAdapterError<T>>();
     private adapterObservables: AdapterObservableLookup<T> = {};
     private adapterStreams: AdapterStreamLookup = {};
@@ -113,7 +115,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @param adapter The adapter to register
      * @returns The ID of the registered adapter
      */
-    public registerAdapter(adapter: IMessageBrokerAdapter<T>): string {
+    public registerAdapter(adapter: IMessageBrokerAdapter<T>): AdapterId {
         const id = uuid();
         this.adapters[id] = adapter;
         return id;
@@ -123,7 +125,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * Unregister an adapter from the message broker
      * @param adapterId The ID of the adapter to unregister
      */
-    public unregisterAdapter(adapterId: string): void {
+    public unregisterAdapter(adapterId: AdapterId): void {
         delete this.adapters[adapterId];
         delete this.adapterStreams[adapterId];
 
@@ -139,8 +141,8 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     /**
      * Get all registered adapters
      */
-    public getAdapters(): IMessageBrokerAdapter<T>[] {
-        return Object.values(this.adapters);
+    public getAdapters(): Record<AdapterId, IMessageBrokerAdapter<T>> {
+        return this.adapters;
     }
 
     /**

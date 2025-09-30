@@ -113,7 +113,7 @@ export interface IMessageBroker<T> {
     /**
      * Get all registered adapters
      */
-    getAdapters(): IMessageBrokerAdapter<T>[];
+    getAdapters(): Record<string, IMessageBrokerAdapter<T>>;
 
     /**
      * Get error stream for adapter failures

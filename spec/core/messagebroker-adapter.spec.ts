@@ -76,8 +76,8 @@ describe('MessageBroker Adapter', () => {
         broker.registerAdapter(mockAdapter);
 
         const adapters = broker.getAdapters();
-        expect(adapters).toContain(mockAdapter);
-        expect(adapters.length).toBe(1);
+        expect(Object.values(adapters)).toContain(mockAdapter);
+        expect(Object.keys(adapters).length).toBe(1);
     });
 
     it('should unregister adapter successfully', () => {
@@ -85,7 +85,7 @@ describe('MessageBroker Adapter', () => {
         broker.unregisterAdapter(adapterId);
 
         const adapters = broker.getAdapters();
-        expect(adapters.length).toBe(0);
+        expect(Object.keys(adapters).length).toBe(0);
     });
 
     it('should initialize and connect adapter', async () => {

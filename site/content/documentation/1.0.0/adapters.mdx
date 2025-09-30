@@ -141,7 +141,7 @@ broker.getErrorStream().subscribe((error) => {
 
 ```typescript
 const adapters = broker.getAdapters();
-console.log('Number of registered adapters:', adapters.length);
+console.log('Number of registered adapters:', Object.keys(adapters).length);
 ```
 
 ### Unregister an Adapter
@@ -155,10 +155,35 @@ broker.unregisterAdapter(adapterId);
 
 ```typescript
 const adapters = broker.getAdapters();
-const connectedCount = adapters.filter((adapter) =>
+const connectedCount = Object.values(adapters).filter((adapter) =>
   adapter.isConnected()
 ).length;
 console.log(`${connectedCount} adapters are connected`);
+```
+
+### Working with Adapter IDs and Values
+
+The `getAdapters()` function returns a record of adapter IDs mapped to adapter instances, giving you access to both the unique identifier and the adapter:
+
+```typescript
+const adapters = broker.getAdapters();
+
+// Access a specific adapter by ID
+const specificAdapter = adapters[adapterId];
+if (specificAdapter?.isConnected()) {
+  console.log(`Adapter ${adapterId} is ready`);
+}
+
+// Iterate over all adapters with their IDs
+Object.entries(adapters).forEach(([id, adapter]) => {
+  console.log(`Adapter ${id}: ${adapter.isConnected() ? 'Connected' : 'Disconnected'}`);
+});
+
+// Get just the adapter instances
+const adapterList = Object.values(adapters);
+
+// Get just the adapter IDs
+const adapterIds = Object.keys(adapters);
 ```
 
 ## Best Practices
