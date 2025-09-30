@@ -1,5 +1,6 @@
 import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
 import { map } from 'rxjs/operators';
+import { vi } from 'vitest';
 import { RSVPMediator } from '../../main/core/rsvp-mediator';
 import { IMessage, IMessageBrokerConfig, IRSVPConfig } from '../../main/contracts/contracts';
 import * as Needle from '@morgan-stanley/needle';

@@ -1,5 +1,6 @@
 import { IRSVPConfig, RSVPResponse } from '../../main/contracts/contracts';
 import { RSVPMediator } from '../../main/core/rsvp-mediator';
+import { vi, assert } from 'vitest';
 
 vi.mock('uuid', () => ({ v4: () => vi.fn().mockReturnValue('mockedId') }));
 describe('RSVPMediator', () => {

@@ -1,5 +1,6 @@
 import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
 import { Observable, Subject } from 'rxjs';
+import { vi } from 'vitest';
 import { MessageBroker } from '../../main/core/messagebroker';
 import { RSVPMediator } from '../../main/core/rsvp-mediator';
 import { IMessage, IMessageBroker, IMessageBrokerAdapter, IAdapterError } from '../../main/contracts/contracts';
@@ -107,27 +108,28 @@ describe('MessageBroker Adapter', () => {
         expect(mockAdapter.sentMessages[0].message.data).toEqual({ test: 'data' });
     });
 
-    it('should receive messages from adapter subscription', (done) => {
-        mockAdapter.initialize().then(() => {
-            mockAdapter.connect().then(() => {
-                broker.registerAdapter(mockAdapter);
+    it('should receive messages from adapter subscription', async () => {
+        await mockAdapter.initialize();
+        await mockAdapter.connect();
+        broker.registerAdapter(mockAdapter);
 
-                broker.get('test-channel').subscribe((message) => {
-                    expect(message.data).toEqual({ test: 'external-data' });
-                    done();
-                });
-
-                const externalMessage: IMessage = {
-                    channelName: 'test-channel',
-                    data: { test: 'external-data' },
-                    timestamp: Date.now(),
-                    id: 'external-id',
-                    isHandled: false,
-                };
-
-                mockAdapter.simulateIncomingMessage(externalMessage);
+        const messagePromise = new Promise<void>((resolve) => {
+            broker.get('test-channel').subscribe((message) => {
+                expect(message.data).toEqual({ test: 'external-data' });
+                resolve();
             });
         });
+
+        const externalMessage: IMessage = {
+            channelName: 'test-channel',
+            data: { test: 'external-data' },
+            timestamp: Date.now(),
+            id: 'external-id',
+            isHandled: false,
+        };
+
+        mockAdapter.simulateIncomingMessage(externalMessage);
+        await messagePromise;
     });
 
     it('should not send messages to disconnected adapter', async () => {
@@ -152,63 +154,65 @@ describe('MessageBroker Adapter', () => {
         expect(mockAdapter.isConnected()).toBe(false);
     });
 
-    it('should emit error when adapter sendMessage fails', (done) => {
-        mockAdapter.initialize().then(() => {
-            mockAdapter.connect().then(() => {
-                mockAdapter.shouldFailSendMessage = true;
-                const adapterId = broker.registerAdapter(mockAdapter);
+    it('should emit error when adapter sendMessage fails', async () => {
+        await mockAdapter.initialize();
+        await mockAdapter.connect();
+        mockAdapter.shouldFailSendMessage = true;
+        const adapterId = broker.registerAdapter(mockAdapter);
 
-                broker.getErrorStream().subscribe((error: IAdapterError<ITestChannels>) => {
-                    expect(error.adapterId).toBe(adapterId);
-                    expect(error.channelName).toBe('test-channel');
-                    expect(error.message.data).toEqual({ test: 'data' });
-                    expect(error.error.message).toBe('Mock adapter send failure');
-                    done();
-                });
-
-                broker.create('test-channel').publish({ test: 'data' });
+        const errorPromise = new Promise<void>((resolve) => {
+            broker.getErrorStream().subscribe((error: IAdapterError<ITestChannels>) => {
+                expect(error.adapterId).toBe(adapterId);
+                expect(error.channelName).toBe('test-channel');
+                expect(error.message.data).toEqual({ test: 'data' });
+                expect(error.error.message).toBe('Mock adapter send failure');
+                resolve();
             });
         });
+
+        broker.create('test-channel').publish({ test: 'data' });
+        await errorPromise;
     });
 
-    it('should reuse adapter subscriptions when upgrading channel from non-cached to cached', (done) => {
-        mockAdapter.initialize().then(() => {
-            mockAdapter.connect().then(() => {
-                broker.registerAdapter(mockAdapter);
+    it('should reuse adapter subscriptions when upgrading channel from non-cached to cached', async () => {
+        await mockAdapter.initialize();
+        await mockAdapter.connect();
+        broker.registerAdapter(mockAdapter);
 
-                // Spy on getMessageStream to count how many times it's called
-                let subscriptionCallCount = 0;
-                const originalGetMessageStream = mockAdapter.getMessageStream;
-                spyOn(mockAdapter, 'getMessageStream').and.callFake(() => {
-                    subscriptionCallCount++;
-                    return originalGetMessageStream.call(mockAdapter);
-                });
+        // Spy on getMessageStream to count how many times it's called
+        let subscriptionCallCount = 0;
+        const originalGetMessageStream = mockAdapter.getMessageStream;
+        vi.spyOn(mockAdapter, 'getMessageStream').mockImplementation(() => {
+            subscriptionCallCount++;
+            return originalGetMessageStream.call(mockAdapter);
+        });
 
-                // Create channel without config first
-                broker.create('test-channel');
+        // Create channel without config first
+        broker.create('test-channel');
 
-                // Create same channel with config - should reuse adapter subscription
-                broker.create('test-channel', { replayCacheSize: 1 });
+        // Create same channel with config - should reuse adapter subscription
+        broker.create('test-channel', { replayCacheSize: 1 });
 
-                // Verify getMessageStream was only called once
-                expect(subscriptionCallCount).toBe(1);
+        // Verify getMessageStream was only called once
+        expect(subscriptionCallCount).toBe(1);
 
-                // Verify channel still works with external messages
-                broker.get('test-channel').subscribe((message) => {
-                    expect(message.data).toEqual({ test: 'external-data-cached' });
-                    done();
-                });
-
-                const externalMessage: IMessage = {
-                    channelName: 'test-channel',
-                    data: { test: 'external-data-cached' },
-                    timestamp: Date.now(),
-                    id: 'external-id-cached',
-                    isHandled: false,
-                };
-
-                mockAdapter.simulateIncomingMessage(externalMessage);
+        // Verify channel still works with external messages
+        const messagePromise = new Promise<void>((resolve) => {
+            broker.get('test-channel').subscribe((message) => {
+                expect(message.data).toEqual({ test: 'external-data-cached' });
+                resolve();
             });
         });
+
+        const externalMessage: IMessage = {
+            channelName: 'test-channel',
+            data: { test: 'external-data-cached' },
+            timestamp: Date.now(),
+            id: 'external-id-cached',
+            isHandled: false,
+        };
+
+        mockAdapter.simulateIncomingMessage(externalMessage);
+        await messagePromise;
     });
 });
