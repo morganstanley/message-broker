@@ -27,7 +27,8 @@
         "build-release": "npm run build"
     },
     "repository": {
-        "type": "git"
+        "type": "git",
+        "url": "https://github.com/morganstanley/message-broker"
     },
     "peerDependencies": {
         "rxjs": "^7.8.1"
