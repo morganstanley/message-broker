@@ -96,6 +96,29 @@ export interface IMessageBroker<T> {
      * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type.
      */
     rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
+
+    /**
+     * Register an adapter with the message broker
+     * @param adapter The adapter to register
+     * @returns The ID of the registered adapter
+     */
+    registerAdapter(adapter: IMessageBrokerAdapter<T>): string;
+
+    /**
+     * Unregister an adapter from the message broker
+     * @param adapterId The ID of the adapter to unregister
+     */
+    unregisterAdapter(adapterId: string): void;
+
+    /**
+     * Get all registered adapters
+     */
+    getAdapters(): Record<string, IMessageBrokerAdapter<T>>;
+
+    /**
+     * Get error stream for adapter failures
+     */
+    getErrorStream(): Observable<IAdapterError<T>>;
 }
 
 /**
@@ -148,4 +171,74 @@ export interface IResponderRef {
      * Disconnect allows the responder to be disconnected from the list of available responders.
      */
     disconnect: () => void;
+}
+
+/**
+ * Base interface for message broker adapters that integrate with external messaging systems
+ */
+export interface IMessageBrokerAdapter<T> {
+    /**
+     * Initialize the adapter
+     * Returns a promise that resolves when initialization is done
+     */
+    initialize(): Promise<void>;
+
+    /**
+     * Connect to the external messaging system
+     * Returns a promise that resolves when connection is established
+     */
+    connect(): Promise<void>;
+
+    /**
+     * Disconnect from the external messaging system
+     * Returns a promise that resolves when disconnection is done
+     */
+    disconnect(): Promise<void>;
+
+    /**
+     * Send a message to the external system
+     * Returns a promise that resolves when message is sent
+     */
+    sendMessage(channelName: keyof T, message: IMessage): Promise<void>;
+
+    /**
+     * Get all messages from the external system
+     * Returns an observable of all messages received from external system
+     */
+    getMessageStream(): Observable<IMessage<T[any]>>;
+
+    /**
+     * Check if the adapter is connected
+     */
+    isConnected(): boolean;
+}
+
+/**
+ * Error information for adapter failures
+ */
+export interface IAdapterError<T> {
+    /**
+     * The adapter that failed
+     */
+    adapterId: string;
+
+    /**
+     * The channel name where the error occurred
+     */
+    channelName: keyof T;
+
+    /**
+     * The message that failed to send
+     */
+    message: IMessage;
+
+    /**
+     * The error that occurred
+     */
+    error: Error;
+
+    /**
+     * Timestamp when the error occurred
+     */
+    timestamp: number;
 }
