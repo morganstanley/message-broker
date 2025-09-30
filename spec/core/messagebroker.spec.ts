@@ -1,23 +1,19 @@
-import { IMocked, Mock, replacePropertiesBeforeEach, setupFunction } from '@morgan-stanley/ts-mocking-bird';
+import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
 import { map } from 'rxjs/operators';
 import { RSVPMediator } from '../../main/core/rsvp-mediator';
 import { IMessage, IMessageBrokerConfig, IRSVPConfig } from '../../main/contracts/contracts';
-import * as uuid from 'uuid';
 import * as Needle from '@morgan-stanley/needle';
 import { MessageBroker, messagebroker } from '../../main/core/messagebroker';
 
 describe('MessageBroker', () => {
-    let mockUuidPackage: IMocked<typeof uuid>;
-    let mockNeedlePackage: IMocked<typeof Needle>;
     let mockRSVPMediator: IMocked<RSVPMediator<any>>;
 
-    replacePropertiesBeforeEach(() => {
-        mockUuidPackage = Mock.create<typeof uuid>().setup(setupFunction('v4', (() => 'mockedId') as any));
-        mockNeedlePackage = Mock.create<typeof Needle>().setup(setupFunction('get', () => getInstance() as any));
-        return [
-            { package: uuid, mocks: { ...mockUuidPackage.mock } },
-            { package: Needle, mocks: { ...mockNeedlePackage.mock } },
-        ];
+    vi.mock(import('uuid'), async (importOriginal) => {
+        const mod = await importOriginal();
+        return {
+            ...mod,
+            v4: () => 'mockedId',
+        };
     });
 
     beforeEach(() => {
@@ -34,11 +30,10 @@ describe('MessageBroker', () => {
     });
 
     it('should create an instance via messagebroker function', () => {
+        const spyMessageBrokerGet = vi.spyOn(Needle, 'get');
         const instance = messagebroker();
         expect(instance).toBeDefined();
-        expect(
-            mockNeedlePackage.withFunction('get').withParametersEqualTo((type: any) => type === MessageBroker),
-        ).wasCalledOnce();
+        expect(spyMessageBrokerGet).toHaveBeenCalledExactlyOnceWith(MessageBroker);
     });
 
     it('should create messagebroker channel', () => {
@@ -155,9 +150,8 @@ describe('MessageBroker', () => {
 
         channel.publish();
 
-        // eslint-disable-next-line
         expect(message!).toBeDefined();
-        // eslint-disable-next-line
+
         expect(message!.data).toBeUndefined();
     });
 
@@ -183,6 +177,11 @@ describe('MessageBroker', () => {
             const numberChannel = messageBroker.create('channelTwo');
             const dateChannel = messageBroker.create('channelThree');
 
+            expect(stringChannel.publish).toBeDefined();
+            expect(numberChannel.publish).toBeDefined();
+            expect(dateChannel.publish).toBeDefined();
+
+            // These should not throw TypeScript compilation errors
             stringChannel.publish('aString');
             numberChannel.publish(123);
             dateChannel.publish(new Date());
@@ -197,6 +196,11 @@ describe('MessageBroker', () => {
             const numberChannel = messageBroker.get('channelTwo');
             const dateChannel = messageBroker.get('channelThree');
 
+            expect(stringChannel).toBeDefined();
+            expect(numberChannel).toBeDefined();
+            expect(dateChannel).toBeDefined();
+
+            // These should not throw TypeScript compilation errors
             stringChannel.subscribe((msg) => msg.data.length);
             numberChannel.subscribe((msg) => msg.data.toExponential());
             dateChannel.subscribe((msg) => msg.data.getMonth());
