@@ -67,7 +67,7 @@
         "tsconfig-paths-webpack-plugin": "^4.1.0",
         "typedoc": "^0.28.10",
         "typescript": "^5.2.2",
-        "vitest": "^3.2.4",
+        "vitest": "^4.0.3",
         "webpack": "^5.44.0"
     },
     "dependencies": {
