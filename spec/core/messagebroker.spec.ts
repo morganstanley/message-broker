@@ -5,7 +5,7 @@ import { vi } from 'vitest';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { IMessage, IMessageBrokerConfig, IRSVPConfig } from '../../main/contracts/contracts.js';
-import { MessageBroker, messagebroker } from '../../main/core/messagebroker.js';
+import { MessageBroker, messageBroker } from '../../main/core/messageBroker.js';
 import { RSVPMediator } from '../../main/core/rsvp-mediator.js';
 
 describe('MessageBroker', () => {
@@ -32,14 +32,14 @@ describe('MessageBroker', () => {
         expect(instance).toBeDefined();
     });
 
-    it('should create an instance via messagebroker function', () => {
+    it('should create an instance via messageBroker function', () => {
         const spyMessageBrokerGet = vi.spyOn(Needle, 'get');
-        const instance = messagebroker();
+        const instance = messageBroker();
         expect(instance).toBeDefined();
         expect(spyMessageBrokerGet).toHaveBeenCalledExactlyOnceWith(MessageBroker);
     });
 
-    it('should create messagebroker channel', () => {
+    it('should create messageBroker channel', () => {
         const instance = getInstance();
         expect(instance.create('myChannel')).toBeDefined();
     });

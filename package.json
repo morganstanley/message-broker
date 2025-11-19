@@ -1,13 +1,13 @@
 {
     "name": "@morgan-stanley/message-broker",
     "version": "1.1.0",
-    "description": "Framework agnostic messagebroker for decoupled communication.",
+    "description": "Framework agnostic messageBroker for decoupled communication.",
     "main": "dist/main/index.js",
     "types": "dist/main/index.d.ts",
     "author": "Morgan Stanley",
     "license": "Apache-2.0",
     "keywords": [
-        "messagebroker",
+        "messageBroker",
         "communication",
         "event",
         "morgan stanley"

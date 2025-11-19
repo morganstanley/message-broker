@@ -1,2 +1,2 @@
-export * from './messagebroker.js';
+export * from './messageBroker.js';
 export * from './rsvp-mediator.js';

@@ -1,7 +1,7 @@
 import { Observable, Subscription } from 'rxjs';
 
 /**
- * Returned when a messagebroker channel is created.
+ * Returned when a messageBroker channel is created.
  */
 export interface IChannel<T = any> {
     /**
@@ -28,7 +28,7 @@ export interface IChannelModel<T> {
 export type RequiredPick<T, K extends keyof T> = Required<Pick<T, K>> & T;
 
 /**
- * Represents a message which passed over the messagebroker channels. All published payloads are wrapped in a Message.
+ * Represents a message which passed over the messageBroker channels. All published payloads are wrapped in a Message.
  */
 export interface IMessage<T = any> {
     /**
@@ -58,7 +58,7 @@ export interface IMessage<T = any> {
 }
 
 /**
- * Represents a messagebroker and provides access to the core features which includes publishing/subscribing to messages and RSVP.
+ * Represents a messageBroker and provides access to the core features which includes publishing/subscribing to messages and RSVP.
  */
 export interface IMessageBroker<T> {
     /**
@@ -74,7 +74,7 @@ export interface IMessageBroker<T> {
     /**
      * Gets the channel with the given channelName. Any messages
      * published on the same channel name will be received via the subscription.
-     * @param channelName Name of the messagebroker channel.
+     * @param channelName Name of the messageBroker channel.
      * @returns Observable of IMessage
      */
     get<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>>;
@@ -82,7 +82,7 @@ export interface IMessageBroker<T> {
     /**
      * Dispose of all existing subscriptions and configurations for a
      * particular channel name.
-     * @param channelName Name of the messagebroker channel.
+     * @param channelName Name of the messageBroker channel.
      */
     dispose<K extends keyof T>(channelName: K): void;
 
@@ -132,7 +132,7 @@ export interface IMessageBrokerConfig {
 }
 
 /**
- * Represents RSVP configuration that is associated with the messagebroker type that is used during creation.
+ * Represents RSVP configuration that is associated with the messageBroker type that is used during creation.
  */
 export interface IRSVPConfig {
     /**
@@ -143,17 +143,17 @@ export interface IRSVPConfig {
 
 export type RSVPOf<T> = T extends IRSVPConfig ? T['rsvp'] : never;
 /**
- * RSVPPayload type as defined in RSVP property that can provided to the messagebroker on creation. This enforces the RSVP channel to the
+ * RSVPPayload type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the RSVP channel to the
  * payload type.
  */
 export type RSVPPayload<T> = T extends IRSVPConfig ? T['rsvp'][keyof T['rsvp']]['payload'] : never;
 /**
- * RSVPResponse type as defined in RSVP property that can provided to the messagebroker on creation. This enforces the RSVP channel to the
+ * RSVPResponse type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the RSVP channel to the
  * response type.
  */
 export type RSVPResponse<T> = T extends IRSVPConfig ? T['rsvp'][keyof T['rsvp']]['response'] : never;
 /**
- * RSVPHandler type as defined in RSVP property that can provided to the messagebroker on creation. This enforces the arguments and the return types
+ * RSVPHandler type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the arguments and the return types
  * of the RSVP handler function.
  */
 export type RSVPHandler<T> = T extends IRSVPConfig ? (mesage: IMessage<RSVPPayload<T>>) => RSVPResponse<T> : never;

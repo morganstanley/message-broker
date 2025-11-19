@@ -28,17 +28,17 @@ type AdapterStreamLookup = { [adapterId: string]: Observable<IMessage<any>> };
 type AdapterId = string;
 
 /**
- * Creates and returns a single messagebroker instance. This is the recommend approach to resolve an instance of the messagebroker
+ * Creates and returns a single messageBroker instance. This is the recommend approach to resolve an instance of the messageBroker
  * when not using dependency injection.
  * @returns IMessageBroker
  */
-export function messagebroker<T = any>(): IMessageBroker<T> {
+export function messageBroker<T = any>(): IMessageBroker<T> {
     const instance = get(MessageBroker);
     return instance;
 }
 
 /**
- * Represents a messagebroker. Using the 'new' operator is discouraged, instead use the messagebroker() function or dependency injection.
+ * Represents a messageBroker. Using the 'new' operator is discouraged, instead use the messageBroker() function or dependency injection.
  */
 @Injectable({ metadata: [RSVPMediator] })
 export class MessageBroker<T = any> implements IMessageBroker<T> {
@@ -74,7 +74,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     /**
      * Gets the channel with the given channelName. Any messages
      * published on the same channel name will be received via the subscription
-     * @param channelName Name of the messagebroker channel
+     * @param channelName Name of the messageBroker channel
      * @returns Observable of IMessage
      */
     public get<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>> {
@@ -101,7 +101,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     /**
      * Dispose of all existing subscriptions and configurations for a
      * particular channel name
-     * @param channelName Name of the messagebroker channel
+     * @param channelName Name of the messageBroker channel
      */
     public dispose<K extends keyof T>(channelName: K): void {
         const channel = this.channelLookup[channelName];

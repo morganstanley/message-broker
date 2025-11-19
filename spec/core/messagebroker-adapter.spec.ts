@@ -3,7 +3,7 @@ import { Observable, Subject } from 'rxjs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { IAdapterError, IMessage, IMessageBroker, IMessageBrokerAdapter } from '../../main/contracts/contracts.js';
-import { MessageBroker } from '../../main/core/messagebroker.js';
+import { MessageBroker } from '../../main/core/messageBroker.js';
 import { RSVPMediator } from '../../main/core/rsvp-mediator.js';
 
 interface ITestChannels {
