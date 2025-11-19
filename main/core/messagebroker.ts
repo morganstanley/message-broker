@@ -40,7 +40,7 @@ export function messagebroker<T = any>(): IMessageBroker<T> {
 /**
  * Represents a messagebroker. Using the 'new' operator is discouraged, instead use the messagebroker() function or dependency injection.
  */
-@Injectable()
+@Injectable({ metadata: [RSVPMediator] })
 export class MessageBroker<T = any> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();

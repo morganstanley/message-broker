@@ -12,7 +12,7 @@ type ResponderLookup<T> = { [P in keyof T]?: IResponderRefInternal[] };
 /**
  * Handles the lifecycle and execution of RSVP handlers.
  */
-@Injectable()
+@Injectable({ metadata: [] })
 export class RSVPMediator<T> {
     private rsvps: ResponderLookup<RSVPOf<T>> = {};
 
