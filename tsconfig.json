@@ -1,9 +1,9 @@
 {
 	"compilerOptions": {
-		"target": "ES5",
-		"module": "nodenext",
-		"lib": ["ES5", "ES6", "DOM"],
-		"types": ["vitest/globals"],
+		"target": "ES2024",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"lib": ["ES2024", "DOM"],
 		"declaration": true,
 		"sourceMap": true,
 		"outDir": "./dist",
@@ -15,7 +15,6 @@
 		"noUnusedParameters": true,
 		"noImplicitReturns": true,
 		"noFallthroughCasesInSwitch": true,
-		"moduleResolution": "nodenext",
 		"baseUrl": "./",
 		"esModuleInterop": true,
 		"experimentalDecorators": true,
