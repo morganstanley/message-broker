@@ -30,7 +30,7 @@ export type RequiredPick<T, K extends keyof T> = Required<Pick<T, K>> & T;
 /**
  * Represents a message which passed over the messageBroker channels. All published payloads are wrapped in a Message.
  */
-export interface IMessage<TChannel extends string = string, TData = any> {
+export interface IMessage<TChannel extends string = string, TData = any, TType extends string = string> {
     /**
      * The name of the channel that the message is published on.
      */
@@ -38,7 +38,7 @@ export interface IMessage<TChannel extends string = string, TData = any> {
     /**
      * The message type which can be defined when the message is published. This type can be leveraged for more granular control.
      */
-    readonly type?: string;
+    readonly type?: TType;
     /**
      * The payload of the message.
      */
@@ -102,13 +102,13 @@ export interface IMessageBroker<T extends Record<string, any> = Record<string, a
      * @param adapter The adapter to register
      * @returns The ID of the registered adapter
      */
-    registerAdapter(adapter: IMessageBrokerAdapter<T>): string;
+    registerAdapter(adapter: IMessageBrokerAdapter<T>): Promise<string>;
 
     /**
      * Unregister an adapter from the message broker
      * @param adapterId The ID of the adapter to unregister
      */
-    unregisterAdapter(adapterId: string): void;
+    unregisterAdapter(adapterId: string): Promise<void>;
 
     /**
      * Get all registered adapters
@@ -219,12 +219,12 @@ export interface IAdapterError<T extends Record<string, any>> {
     /**
      * The channel name where the error occurred
      */
-    channelName: keyof T;
+    channelName?: keyof T;
 
     /**
      * The message that failed to send
      */
-    message: IMessage<Extract<keyof T, string>>;
+    message?: IMessage<Extract<keyof T, string>>;
 
     /**
      * The error that occurred

@@ -117,17 +117,34 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
      * @param adapter The adapter to register
      * @returns The ID of the registered adapter
      */
-    public registerAdapter(adapter: IMessageBrokerAdapter<T>): AdapterId {
-        const id = uuid();
-        this.adapters[id] = adapter;
-        return id;
+    public async registerAdapter(adapter: IMessageBrokerAdapter<T>): Promise<AdapterId> {
+        const adapterId = uuid();
+        this.adapters[adapterId] = adapter;
+
+        await adapter.connect().catch((error) => {
+            this.errorStream.next({
+                adapterId,
+                error,
+                timestamp: Date.now(),
+            });
+        });
+
+        return adapterId;
     }
 
     /**
      * Unregister an adapter from the message broker
      * @param adapterId The ID of the adapter to unregister
      */
-    public unregisterAdapter(adapterId: AdapterId): void {
+    public async unregisterAdapter(adapterId: AdapterId): Promise<void> {
+        await this.adapters[adapterId]?.disconnect().catch((error) => {
+            this.errorStream.next({
+                adapterId,
+                error,
+                timestamp: Date.now(),
+            });
+        });
+
         delete this.adapters[adapterId];
         delete this.adapterStreams[adapterId];
 
@@ -238,11 +255,11 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
         return channelModel;
     }
 
-    public createMessage<K extends Extract<keyof T, string>, D = any>(
+    public createMessage<K extends Extract<keyof T, string>, D = any, TType extends string = string>(
         channelName: K,
         data: D,
-        type?: string,
-    ): IMessage<K, D> {
+        type?: TType,
+    ): IMessage<K, D, TType> {
         return {
             channelName,
             data,
