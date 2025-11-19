@@ -1,6 +1,6 @@
 import { IRSVPConfig, RSVPResponse } from '../../main/contracts/contracts.js';
 import { RSVPMediator } from '../../main/core/rsvp-mediator.js';
-import { vi, assert } from 'vitest';
+import { describe, expect, it, vi, assert, beforeAll } from 'vitest';
 
 vi.mock('uuid', () => ({ v4: () => vi.fn().mockReturnValue('mockedId') }));
 describe('RSVPMediator', () => {
@@ -66,10 +66,9 @@ describe('RSVPMediator', () => {
 
     it('should NOT return the responders response when channel names do not match', () => {
         const instance = getInstance<MockConfig>();
-        let invoked = false;
+        const invoked = false;
         instance.rsvp('noMatchChannel', () => {
             return 'Response 1';
-            invoked = true;
         });
 
         const results = instance.rsvp('rsvpChannel', { data: 'bar' });

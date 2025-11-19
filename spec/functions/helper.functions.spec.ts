@@ -1,5 +1,6 @@
 import { isCacheSizeEqual } from '../../main/functions/helper.functions.js';
 import { IMessageBrokerConfig } from '../../main/contracts/contracts.js';
+import { describe, expect, it } from 'vitest';
 
 describe('Helper functions', () => {
     it('should return true if config is equal', () => {
