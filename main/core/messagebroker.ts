@@ -21,7 +21,7 @@ import {
 import { isCacheSizeEqual } from '../functions/helper.functions.js';
 import { RSVPMediator } from './rsvp-mediator.js';
 
-type ChannelModelLookup<T> = { [P in keyof T]?: IChannelModel<T[P]> };
+type ChannelModelLookup<T extends Record<string, any>> = { [P in keyof T]?: IChannelModel<T[P]> };
 type AdapterObservableLookup<T> = { [P in keyof T]?: { [adapterId: string]: Observable<IMessage<any>> } };
 type AdapterStreamLookup = { [adapterId: string]: Observable<IMessage<any>> };
 
@@ -32,7 +32,7 @@ type AdapterId = string;
  * when not using dependency injection.
  * @returns IMessageBroker
  */
-export function messageBroker<T = any>(): IMessageBroker<T> {
+export function messageBroker<T extends Record<string, any>>(): IMessageBroker<T> {
     const instance = get(MessageBroker);
     return instance;
 }
@@ -41,7 +41,7 @@ export function messageBroker<T = any>(): IMessageBroker<T> {
  * Represents a messageBroker. Using the 'new' operator is discouraged, instead use the messageBroker() function or dependency injection.
  */
 @Injectable({ metadata: [RSVPMediator] })
-export class MessageBroker<T = any> implements IMessageBroker<T> {
+export class MessageBroker<T extends Record<string, any>> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
     private adapters: Record<AdapterId, IMessageBrokerAdapter<T>> = {};
@@ -59,7 +59,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @param config - optional config object that determines number of messages to cache
      * @returns IChannel
      */
-    public create<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannel<T[K]> {
+    public create<K extends Extract<keyof T, string>>(channelName: K, config?: IMessageBrokerConfig): IChannel<T[K]> {
         const existingChannelModel = this.channelLookup[channelName];
 
         if (existingChannelModel == null) {
@@ -77,7 +77,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @param channelName Name of the messageBroker channel
      * @returns Observable of IMessage
      */
-    public get<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>> {
+    public get<K extends Extract<keyof T, string>>(channelName: K): Observable<IMessage<T[K]>> {
         return this.getDeferredObservable<K>(channelName);
     }
 
@@ -158,7 +158,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * Return a deferred observable as the channel config may have been updated before the subscription
      * @param channelName name of channel to subscribe to
      */
-    private getDeferredObservable<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>> {
+    private getDeferredObservable<K extends Extract<keyof T, string>>(channelName: K): Observable<IMessage<T[K]>> {
         return defer(() => {
             const channel = this.channelLookup[channelName];
 
@@ -172,7 +172,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         });
     }
 
-    private createCachedChannel<K extends keyof T>(
+    private createCachedChannel<K extends Extract<keyof T, string>>(
         channelName: K,
         channelModel: IChannelModel<T[K]>,
         config: IMessageBrokerConfig,
@@ -187,7 +187,10 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         return this.createChannelImpl<K>(channelName, config).channel;
     }
 
-    private createChannelImpl<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannelModel<T[K]> {
+    private createChannelImpl<K extends Extract<keyof T, string>>(
+        channelName: K,
+        config?: IMessageBrokerConfig,
+    ): IChannelModel<T[K]> {
         let subscription: Subscription | undefined;
         const adapterObservables = this.getOrCreateAdapterObservables(channelName);
         let observable = merge(
@@ -205,7 +208,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
             const message = this.createMessage(channelName, data, type);
             this.messagePublisher.next(message);
             Object.entries(this.adapters).forEach(([id, adapter]) => {
-                adapter.sendMessage(channelName, message).catch((error) => {
+                adapter.sendMessage(message).catch((error) => {
                     this.errorStream.next({
                         adapterId: id,
                         channelName,
@@ -235,9 +238,13 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         return channelModel;
     }
 
-    private createMessage<K extends keyof T, D = any>(channelName: K, data: D, type?: string): IMessage<D> {
+    public createMessage<K extends Extract<keyof T, string>, D = any>(
+        channelName: K,
+        data: D,
+        type?: string,
+    ): IMessage<K, D> {
         return {
-            channelName: channelName as string,
+            channelName,
             data,
             type,
             timestamp: Date.now(),

@@ -35,12 +35,12 @@ class MockAdapter implements IMessageBrokerAdapter<ITestChannels> {
         return Promise.resolve();
     }
 
-    sendMessage(channelName: keyof ITestChannels, message: IMessage): Promise<void> {
+    sendMessage(message: IMessage<keyof ITestChannels>): Promise<void> {
         if (this.shouldFailSendMessage) {
             return Promise.reject(new Error('Mock adapter send failure'));
         }
         if (this.connected) {
-            this.sentMessages.push({ channel: channelName, message });
+            this.sentMessages.push({ channel: message.channelName, message });
         }
         return Promise.resolve();
     }
@@ -69,7 +69,7 @@ describe('MessageBroker Adapter', () => {
         mockAdapter = new MockAdapter();
     });
 
-    function getInstance<T>(): IMessageBroker<T> {
+    function getInstance<T extends Record<string, any>>(): IMessageBroker<T> {
         return new MessageBroker<T>(mockRSVPMediator.mock);
     }
 
