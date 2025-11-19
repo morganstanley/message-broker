@@ -19,17 +19,17 @@ describe('MessageBroker Adapter', () => {
     let broker: IMessageBroker<ITestChannels>;
     let mockRSVPMediator: IMocked<RSVPMediator<ITestChannels>>;
     let mockAdapter: IMocked<IMessageBrokerAdapter<ITestChannels>>;
-    let adaptorMessagesStream: Subject<IMessage>;
+    let adapterMessagesStream: Subject<IMessage>;
 
     beforeEach(() => {
-        adaptorMessagesStream = new Subject<IMessage>();
+        adapterMessagesStream = new Subject<IMessage>();
 
         mockRSVPMediator = Mock.create<RSVPMediator<ITestChannels>>().setup(setupFunction('rsvp'));
         broker = getInstance<ITestChannels>();
         mockAdapter = Mock.create<IMessageBrokerAdapter<ITestChannels>>().setup(
             setupFunction('connect', () => Promise.resolve()),
             setupFunction('disconnect', () => Promise.resolve()),
-            setupFunction('getMessageStream', () => adaptorMessagesStream.asObservable()),
+            setupFunction('getMessageStream', () => adapterMessagesStream.asObservable()),
             setupFunction('sendMessage', () => Promise.resolve()),
         );
     });
@@ -54,7 +54,7 @@ describe('MessageBroker Adapter', () => {
         expect(Object.keys(adapters).length).toBe(0);
     });
 
-    it(`should connect to an adaptor as it is registered`, async () => {
+    it(`should connect to an adapter as it is registered`, async () => {
         await broker.registerAdapter(mockAdapter.mock);
 
         expect(mockAdapter.withFunction('connect')).wasCalledOnce();
@@ -67,13 +67,13 @@ describe('MessageBroker Adapter', () => {
         const mockObserver = Mock.create<Observer<IAdapterError<any>>>().setup(setupFunction('next'));
         broker.getErrorStream().subscribe(mockObserver.mock);
 
-        const adaptorId = await broker.registerAdapter(mockAdapter.mock);
+        const adapterId = await broker.registerAdapter(mockAdapter.mock);
 
         expect(
             mockObserver
                 .withFunction('next')
                 .withParametersEqualTo(
-                    (message) => message.adapterId === adaptorId && message.error === connectionError,
+                    (message) => message.adapterId === adapterId && message.error === connectionError,
                 ),
         ).wasCalledOnce();
     });
@@ -109,7 +109,7 @@ describe('MessageBroker Adapter', () => {
             isHandled: false,
         };
 
-        adaptorMessagesStream.next(externalMessage);
+        adapterMessagesStream.next(externalMessage);
 
         const receivedMessage = await messagePromise;
 
@@ -131,15 +131,15 @@ describe('MessageBroker Adapter', () => {
         const mockObserver = Mock.create<Observer<IAdapterError<any>>>().setup(setupFunction('next'));
         broker.getErrorStream().subscribe(mockObserver.mock);
 
-        const adaptorId = await broker.registerAdapter(mockAdapter.mock);
+        const adapterId = await broker.registerAdapter(mockAdapter.mock);
 
-        await broker.unregisterAdapter(adaptorId);
+        await broker.unregisterAdapter(adapterId);
 
         expect(
             mockObserver
                 .withFunction('next')
                 .withParametersEqualTo(
-                    (message) => message.adapterId === adaptorId && message.error === connectionError,
+                    (message) => message.adapterId === adapterId && message.error === connectionError,
                 ),
         ).wasCalledOnce();
     });
@@ -205,7 +205,7 @@ describe('MessageBroker Adapter', () => {
             isHandled: false,
         };
 
-        adaptorMessagesStream.next(externalMessage);
+        adapterMessagesStream.next(externalMessage);
         const message = await messagePromise;
 
         expect(message.data).toEqual({ test: 'external-data-cached' });
