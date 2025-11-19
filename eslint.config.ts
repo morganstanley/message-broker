@@ -1,7 +1,9 @@
 import eslint from '@eslint/js';
 import { defineConfig } from 'eslint/config';
-import tseslint from 'typescript-eslint';
 import prettierPlugin from 'eslint-plugin-prettier';
+import simpleImportSort from 'eslint-plugin-simple-import-sort';
+import unusedImports from 'eslint-plugin-unused-imports';
+import tseslint from 'typescript-eslint';
 
 const prettierConfig = {
     trailingComma: 'all',
@@ -20,6 +22,8 @@ export default defineConfig(
     {
         plugins: {
             prettier: prettierPlugin,
+            'simple-import-sort': simpleImportSort,
+            'unused-imports': unusedImports,
         },
 
         rules: {
@@ -27,6 +31,8 @@ export default defineConfig(
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-unused-vars': 'off',
             '@typescript-eslint/no-this-alias': 'off',
+            'simple-import-sort/imports': 'error',
+            'unused-imports/no-unused-imports': 'error',
             'prettier/prettier': ['error', prettierConfig],
         },
     },

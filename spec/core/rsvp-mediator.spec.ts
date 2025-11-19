@@ -1,6 +1,7 @@
+import { assert, beforeAll, describe, expect, it, vi } from 'vitest';
+
 import { IRSVPConfig, RSVPResponse } from '../../main/contracts/contracts.js';
 import { RSVPMediator } from '../../main/core/rsvp-mediator.js';
-import { describe, expect, it, vi, assert, beforeAll } from 'vitest';
 
 vi.mock('uuid', () => ({ v4: () => vi.fn().mockReturnValue('mockedId') }));
 describe('RSVPMediator', () => {

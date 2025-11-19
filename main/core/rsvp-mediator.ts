@@ -1,6 +1,7 @@
 import { Injectable } from '@morgan-stanley/needle';
-import { RSVPHandler, RSVPOf, RSVPPayload, RSVPResponse, IResponderRef } from '../contracts/contracts.js';
 import { v4 as uuid } from 'uuid';
+
+import { IResponderRef, RSVPHandler, RSVPOf, RSVPPayload, RSVPResponse } from '../contracts/contracts.js';
 
 interface IResponderRefInternal extends IResponderRef {
     execute: (payload: any) => any;
