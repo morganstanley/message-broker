@@ -23,7 +23,7 @@ describe('MessageBroker', () => {
         mockRSVPMediator = Mock.create<RSVPMediator<any>>().setup(setupFunction('rsvp'));
     });
 
-    function getInstance<T = any>(): MessageBroker {
+    function getInstance<T extends Record<string, any>>(): MessageBroker<T> {
         return new MessageBroker<T>(mockRSVPMediator.mock);
     }
 
@@ -375,7 +375,7 @@ describe('MessageBroker', () => {
         });
     });
 
-    function verifyMessage<T>(message: IMessage<T>, expectedData: T, expectedType?: string) {
+    function verifyMessage<T extends string>(message: IMessage<T>, expectedData: T, expectedType?: string) {
         expect(message).toBeDefined();
         expect(message.data).toEqual(expectedData);
         expect(message.type).toEqual(expectedType);

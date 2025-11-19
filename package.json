@@ -19,8 +19,9 @@
         "lint:fix": "eslint . --fix",
         "watch:test": "vitest --watch",
         "watch:build": "tsc --watch",
-        "build-tsc": "tsc -p tsconfig.lib.json",
-        "build": "npm run build-tsc",
+        "build:lib": "tsc -p tsconfig.lib.json",
+        "build:specs": "tsc -p specs/tsconfig.spec.json",
+        "build": "npm run build:lib && npm run build:specs",
         "prebuild:release": "npm run clean",
         "build:release": "concurrently npm:build npm:test npm:lint --killOthersOn=failure",
         "postbuild:release": "typedoc main/index.ts"

@@ -41,7 +41,7 @@ export function messageBroker<T extends Record<string, any>>(): IMessageBroker<T
  * Represents a messageBroker. Using the 'new' operator is discouraged, instead use the messageBroker() function or dependency injection.
  */
 @Injectable({ metadata: [RSVPMediator] })
-export class MessageBroker<T extends Record<string, any>> implements IMessageBroker<T> {
+export class MessageBroker<T extends Record<string, any> = Record<string, any>> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
     private adapters: Record<AdapterId, IMessageBrokerAdapter<T>> = {};
