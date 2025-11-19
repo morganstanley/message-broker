@@ -1,9 +1,9 @@
 import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
 import { Observable, Subject } from 'rxjs';
 import { vi } from 'vitest';
-import { MessageBroker } from '../../main/core/messagebroker';
-import { RSVPMediator } from '../../main/core/rsvp-mediator';
-import { IMessage, IMessageBroker, IMessageBrokerAdapter, IAdapterError } from '../../main/contracts/contracts';
+import { MessageBroker } from '../../main/core/messagebroker.js';
+import { RSVPMediator } from '../../main/core/rsvp-mediator.js';
+import { IMessage, IMessageBroker, IMessageBrokerAdapter, IAdapterError } from '../../main/contracts/contracts.js';
 
 interface ITestChannels {
     'test-channel': {

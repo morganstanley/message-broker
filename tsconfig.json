@@ -1,32 +1,25 @@
 {
-    "compilerOptions": {
-        "target": "ES5",
-        "module": "commonjs",
-        "lib": [
-            "ES5",
-            "ES6",
-            "DOM",
-        ],
-        "types": ["vitest/globals"],
-        "declaration": true,
-        "sourceMap": true,
-        "outDir": "./dist",
-        "rootDir": "./",
-        "downlevelIteration": true,
-        "skipLibCheck": true,
-        "strict": true,
-        "noUnusedLocals": true,
-        "noUnusedParameters": true,
-        "noImplicitReturns": true,
-        "noFallthroughCasesInSwitch": true,
-        "moduleResolution": "node",
-        "baseUrl": "./",
-        "esModuleInterop": true,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-    },
-    "exclude": [
-        "node_modules",
-        "dist"
-    ]
+	"compilerOptions": {
+		"target": "ES5",
+		"module": "nodenext",
+		"lib": ["ES5", "ES6", "DOM"],
+		"types": ["vitest/globals"],
+		"declaration": true,
+		"sourceMap": true,
+		"outDir": "./dist",
+		"rootDir": "./",
+		"downlevelIteration": true,
+		"skipLibCheck": true,
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noImplicitReturns": true,
+		"noFallthroughCasesInSwitch": true,
+		"moduleResolution": "nodenext",
+		"baseUrl": "./",
+		"esModuleInterop": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true
+	},
+	"exclude": ["node_modules", "dist"]
 }

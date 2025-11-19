@@ -1,10 +1,10 @@
 import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
 import { map } from 'rxjs/operators';
 import { vi } from 'vitest';
-import { RSVPMediator } from '../../main/core/rsvp-mediator';
-import { IMessage, IMessageBrokerConfig, IRSVPConfig } from '../../main/contracts/contracts';
+import { RSVPMediator } from '../../main/core/rsvp-mediator.js';
+import { IMessage, IMessageBrokerConfig, IRSVPConfig } from '../../main/contracts/contracts.js';
 import * as Needle from '@morgan-stanley/needle';
-import { MessageBroker, messagebroker } from '../../main/core/messagebroker';
+import { MessageBroker, messagebroker } from '../../main/core/messagebroker.js';
 
 describe('MessageBroker', () => {
     let mockRSVPMediator: IMocked<RSVPMediator<any>>;

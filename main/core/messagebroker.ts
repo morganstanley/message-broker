@@ -2,7 +2,7 @@ import { get, Injectable } from '@morgan-stanley/needle';
 import { defer, merge, Observable, Subject, Subscription } from 'rxjs';
 import { filter, shareReplay } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
-import { isCacheSizeEqual } from '../functions/helper.functions';
+import { isCacheSizeEqual } from '../functions/helper.functions.js';
 import {
     IChannel,
     IChannelModel,
@@ -17,8 +17,8 @@ import {
     IResponderRef,
     IMessageBrokerAdapter,
     IAdapterError,
-} from '../contracts/contracts';
-import { RSVPMediator } from './rsvp-mediator';
+} from '../contracts/contracts.js';
+import { RSVPMediator } from './rsvp-mediator.js';
 type ChannelModelLookup<T> = { [P in keyof T]?: IChannelModel<T[P]> };
 type AdapterObservableLookup<T> = { [P in keyof T]?: { [adapterId: string]: Observable<IMessage<any>> } };
 type AdapterStreamLookup = { [adapterId: string]: Observable<IMessage<any>> };

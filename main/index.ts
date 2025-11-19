@@ -1,4 +1,4 @@
-export * from './core';
+export * from './core/index.js';
 export {
     IMessageBrokerConfig,
     IMessage,
@@ -12,4 +12,4 @@ export {
     RSVPResponse,
     IMessageBrokerAdapter,
     IAdapterError,
-} from './contracts/contracts';
+} from './contracts/contracts.js';
