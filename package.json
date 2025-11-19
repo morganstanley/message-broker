@@ -1,6 +1,6 @@
 {
     "name": "@morgan-stanley/message-broker",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "description": "Framework agnostic messageBroker for decoupled communication.",
     "main": "dist/main/index.js",
     "types": "dist/main/index.d.ts",
