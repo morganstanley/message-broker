@@ -9,7 +9,7 @@ npm install @morgan-stanley/message-broker
 
 ```Typescript
 import {
-    messagebroker,
+    messageBroker,
     IMessageBroker
 } from '@morgan-stanley/message-broker'
 
@@ -20,7 +20,7 @@ interface IContracts {
 }
 
 const broker: IMessageBroker<IContracts>
-    = messagebroker<IContracts>();
+    = messageBroker<IContracts>();
 
 broker.get('myChannel').subscribe(message => {
     console.log(message.payload)

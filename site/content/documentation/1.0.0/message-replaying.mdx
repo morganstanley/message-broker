@@ -3,12 +3,12 @@ order: 3
 title: Message Replaying
 ---
 
-Replaying will allow new subscriptions to receive the latest "n" number of messages. Using the messagebroker config the user can configure how many messages they want to be cached when subscriptions are made. Configs can only be provided when the messagebroker channels are created.
+Replaying will allow new subscriptions to receive the latest "n" number of messages. Using the messageBroker config the user can configure how many messages they want to be cached when subscriptions are made. Configs can only be provided when the messageBroker channels are created.
 
 ```typescript
-import { messagebroker } from "@morgan-stanley/message-broker";
+import { messageBroker } from "@morgan-stanley/message-broker";
 
-messagebroker()
+messageBroker()
     .create('myCachedChannel', { replayCacheSize: 2 })
     .publish({
         payload: 'a message to all new Subscribers!'

@@ -1,14 +1,12 @@
-import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
+import * as Needle from '@morgan-stanley/needle';
 import { map } from 'rxjs/operators';
 import { vi } from 'vitest';
-import { RSVPMediator } from '../../main/core/rsvp-mediator';
-import { IMessage, IMessageBrokerConfig, IRSVPConfig } from '../../main/contracts/contracts';
-import * as Needle from '@morgan-stanley/needle';
-import { MessageBroker, messagebroker } from '../../main/core/messagebroker';
+import { describe, expect, it } from 'vitest';
+
+import { IMessage, IMessageBrokerConfig } from '../../main/contracts/contracts.js';
+import { MessageBroker, messageBroker } from '../../main/core/messageBroker.js';
 
 describe('MessageBroker', () => {
-    let mockRSVPMediator: IMocked<RSVPMediator<any>>;
-
     vi.mock(import('uuid'), async (importOriginal) => {
         const mod = await importOriginal();
         return {
@@ -17,12 +15,8 @@ describe('MessageBroker', () => {
         };
     });
 
-    beforeEach(() => {
-        mockRSVPMediator = Mock.create<RSVPMediator<any>>().setup(setupFunction('rsvp'));
-    });
-
-    function getInstance<T = any>(): MessageBroker {
-        return new MessageBroker<T>(mockRSVPMediator.mock);
+    function getInstance<T extends Record<string, any>>(): MessageBroker<T> {
+        return new MessageBroker<T>();
     }
 
     it('should create instance', () => {
@@ -30,14 +24,14 @@ describe('MessageBroker', () => {
         expect(instance).toBeDefined();
     });
 
-    it('should create an instance via messagebroker function', () => {
+    it('should create an instance via messageBroker function', () => {
         const spyMessageBrokerGet = vi.spyOn(Needle, 'get');
-        const instance = messagebroker();
+        const instance = messageBroker();
         expect(instance).toBeDefined();
         expect(spyMessageBrokerGet).toHaveBeenCalledExactlyOnceWith(MessageBroker);
     });
 
-    it('should create messagebroker channel', () => {
+    it('should create messageBroker channel', () => {
         const instance = getInstance();
         expect(instance.create('myChannel')).toBeDefined();
     });
@@ -156,23 +150,15 @@ describe('MessageBroker', () => {
         expect(message!.data).toBeUndefined();
     });
 
-    interface IMySampleBroker extends IRSVPConfig {
+    interface IMySampleBroker {
         channelOne: string;
         channelTwo: number;
         channelThree: Date;
-        rsvp: {
-            bootstrap: {
-                payload: { data: 'myData' };
-                response: string[];
-            };
-        };
     }
 
     describe('Typing', () => {
         it('should return a typed push function', () => {
-            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>(
-                mockRSVPMediator.mock,
-            );
+            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>();
 
             const stringChannel = messageBroker.create('channelOne');
             const numberChannel = messageBroker.create('channelTwo');
@@ -189,9 +175,7 @@ describe('MessageBroker', () => {
         });
 
         it('should return a typed channel', () => {
-            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>(
-                mockRSVPMediator.mock,
-            );
+            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>();
 
             const stringChannel = messageBroker.get('channelOne');
             const numberChannel = messageBroker.get('channelTwo');
@@ -350,30 +334,7 @@ describe('MessageBroker', () => {
         });
     });
 
-    describe('RSVP', () => {
-        it('should call rsvp mediator when passing a payload', () => {
-            const instance = getInstance<IMySampleBroker>();
-            instance.rsvp('bootstrap', { data: 'myData' });
-
-            expect(
-                mockRSVPMediator.withFunction('rsvp').withParametersEqualTo('bootstrap', { data: 'myData' }),
-            ).wasCalledOnce();
-        });
-
-        it('should call rsvp mediator when passing a handler', () => {
-            const instance = getInstance<IMySampleBroker>();
-            const handler = () => ['rsvpResponse'];
-            instance.rsvp('bootstrap', handler);
-
-            expect(
-                mockRSVPMediator
-                    .withFunction('rsvp')
-                    .withParametersEqualTo('bootstrap', (callBack: any) => handler === callBack),
-            ).wasCalledOnce();
-        });
-    });
-
-    function verifyMessage<T>(message: IMessage<T>, expectedData: T, expectedType?: string) {
+    function verifyMessage<T extends string>(message: IMessage<T>, expectedData: T, expectedType?: string) {
         expect(message).toBeDefined();
         expect(message.data).toEqual(expectedData);
         expect(message.type).toEqual(expectedType);

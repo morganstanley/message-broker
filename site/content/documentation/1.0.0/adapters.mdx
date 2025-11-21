@@ -81,7 +81,7 @@ export class WebSocketAdapter implements IMessageBrokerAdapter<IMyChannels> {
 Register adapters with your message broker instance:
 
 ```typescript
-const broker = messagebroker<IMyChannels>();
+const broker = messageBroker<IMyChannels>();
 const wsAdapter = new WebSocketAdapter();
 
 // Initialize and connect the adapter

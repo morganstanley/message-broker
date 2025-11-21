@@ -2,44 +2,42 @@ import { get, Injectable } from '@morgan-stanley/needle';
 import { defer, merge, Observable, Subject, Subscription } from 'rxjs';
 import { filter, shareReplay } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
-import { isCacheSizeEqual } from '../functions/helper.functions';
+
 import {
+    IAdapterError,
     IChannel,
     IChannelModel,
     IMessage,
     IMessageBroker,
+    IMessageBrokerAdapter,
     IMessageBrokerConfig,
     RequiredPick,
-    RSVPHandler,
-    RSVPOf,
-    RSVPPayload,
-    RSVPResponse,
-    IResponderRef,
-    IMessageBrokerAdapter,
-    IAdapterError,
-} from '../contracts/contracts';
-import { RSVPMediator } from './rsvp-mediator';
-type ChannelModelLookup<T> = { [P in keyof T]?: IChannelModel<T[P]> };
-type AdapterObservableLookup<T> = { [P in keyof T]?: { [adapterId: string]: Observable<IMessage<any>> } };
+} from '../contracts/contracts.js';
+import { isCacheSizeEqual } from '../functions/helper.functions.js';
+
+type ChannelModelLookup<T extends Record<string, any>> = { [P in Extract<keyof T, string>]?: IChannelModel<T[P], P> };
+type AdapterObservableLookup<T> = {
+    [P in Extract<keyof T, string>]?: { [adapterId: string]: Observable<IMessage<T[P], P>> };
+};
 type AdapterStreamLookup = { [adapterId: string]: Observable<IMessage<any>> };
 
 type AdapterId = string;
 
 /**
- * Creates and returns a single messagebroker instance. This is the recommend approach to resolve an instance of the messagebroker
+ * Creates and returns a single messageBroker instance. This is the recommend approach to resolve an instance of the messageBroker
  * when not using dependency injection.
  * @returns IMessageBroker
  */
-export function messagebroker<T = any>(): IMessageBroker<T> {
+export function messageBroker<T extends Record<string, any>>(): IMessageBroker<T> {
     const instance = get(MessageBroker);
     return instance;
 }
 
 /**
- * Represents a messagebroker. Using the 'new' operator is discouraged, instead use the messagebroker() function or dependency injection.
+ * Represents a messageBroker. Using the 'new' operator is discouraged, instead use the messageBroker() function or dependency injection.
  */
-@Injectable()
-export class MessageBroker<T = any> implements IMessageBroker<T> {
+@Injectable({ metadata: [] })
+export class MessageBroker<T extends Record<string, any> = Record<string, any>> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
     private adapters: Record<AdapterId, IMessageBrokerAdapter<T>> = {};
@@ -47,17 +45,23 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     private adapterObservables: AdapterObservableLookup<T> = {};
     private adapterStreams: AdapterStreamLookup = {};
 
-    constructor(private rsvpMediator: RSVPMediator<T>) {}
-
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
      * No caching is set by default
      *
+    rsvp<K extends keyof RSVPOf<T>>(channelName: K, payload: RSVPPayload<T>): RSVPResponse<T>[];
+    rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
+    rsvp(channelName: unknown, handler: unknown): IResponderRef | RSVPResponse<T>[] {
+        throw new Error('Method not implemented.');
+    }
      * @param channelName - name of the channel to create
      * @param config - optional config object that determines number of messages to cache
      * @returns IChannel
      */
-    public create<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannel<T[K]> {
+    public create<K extends Extract<keyof T, string>>(
+        channelName: K,
+        config?: IMessageBrokerConfig,
+    ): IChannel<T[K], K> {
         const existingChannelModel = this.channelLookup[channelName];
 
         if (existingChannelModel == null) {
@@ -72,36 +76,19 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
     /**
      * Gets the channel with the given channelName. Any messages
      * published on the same channel name will be received via the subscription
-     * @param channelName Name of the messagebroker channel
+     * @param channelName Name of the messageBroker channel
      * @returns Observable of IMessage
      */
-    public get<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>> {
+    public get<K extends Extract<keyof T, string>>(channelName: K): Observable<IMessage<T[K], K>> {
         return this.getDeferredObservable<K>(channelName);
-    }
-
-    /**
-     * RSVP function is analogous to the publish function except it's synchronous and expects a response from particpants immediately.
-     * @param channelName The channel name we wish to broadcast upon
-     * @param payload The payload we are going to send for our rsvp request
-     */
-    public rsvp<K extends keyof RSVPOf<T>>(channelName: K, payload: RSVPPayload<T>): RSVPResponse<T>[];
-    /***
-     * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type
-     */
-    public rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
-    public rsvp<K extends keyof RSVPOf<T>>(
-        channelName: K,
-        payloadOrHandler: RSVPPayload<T> | RSVPHandler<T>,
-    ): IResponderRef | RSVPResponse<T>[] {
-        return this.rsvpMediator.rsvp(channelName, payloadOrHandler);
     }
 
     /**
      * Dispose of all existing subscriptions and configurations for a
      * particular channel name
-     * @param channelName Name of the messagebroker channel
+     * @param channelName Name of the messageBroker channel
      */
-    public dispose<K extends keyof T>(channelName: K): void {
+    public dispose<K extends Extract<keyof T, string>>(channelName: K): void {
         const channel = this.channelLookup[channelName];
         if (this.isChannelConfiguredWithCaching(channel)) {
             channel.subscription.unsubscribe();
@@ -115,23 +102,40 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * @param adapter The adapter to register
      * @returns The ID of the registered adapter
      */
-    public registerAdapter(adapter: IMessageBrokerAdapter<T>): AdapterId {
-        const id = uuid();
-        this.adapters[id] = adapter;
-        return id;
+    public async registerAdapter(adapter: IMessageBrokerAdapter<T>): Promise<AdapterId> {
+        const adapterId = uuid();
+        this.adapters[adapterId] = adapter;
+
+        await adapter.connect().catch((error) => {
+            this.errorStream.next({
+                adapterId,
+                error,
+                timestamp: Date.now(),
+            });
+        });
+
+        return adapterId;
     }
 
     /**
      * Unregister an adapter from the message broker
      * @param adapterId The ID of the adapter to unregister
      */
-    public unregisterAdapter(adapterId: AdapterId): void {
+    public async unregisterAdapter(adapterId: AdapterId): Promise<void> {
+        await this.adapters[adapterId]?.disconnect().catch((error) => {
+            this.errorStream.next({
+                adapterId,
+                error,
+                timestamp: Date.now(),
+            });
+        });
+
         delete this.adapters[adapterId];
         delete this.adapterStreams[adapterId];
 
         // Clean up channel-specific observables for this adapter
         Object.keys(this.adapterObservables).forEach((channelName) => {
-            const channelObs = this.adapterObservables[channelName as keyof T];
+            const channelObs = this.adapterObservables[channelName];
             if (channelObs) {
                 delete channelObs[adapterId];
             }
@@ -156,7 +160,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
      * Return a deferred observable as the channel config may have been updated before the subscription
      * @param channelName name of channel to subscribe to
      */
-    private getDeferredObservable<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>> {
+    private getDeferredObservable<K extends Extract<keyof T, string>>(channelName: K): Observable<IMessage<T[K], K>> {
         return defer(() => {
             const channel = this.channelLookup[channelName];
 
@@ -170,11 +174,11 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         });
     }
 
-    private createCachedChannel<K extends keyof T>(
+    private createCachedChannel<K extends Extract<keyof T, string>>(
         channelName: K,
         channelModel: IChannelModel<T[K]>,
         config: IMessageBrokerConfig,
-    ): IChannel<T[K]> {
+    ): IChannel<T[K], K> {
         if (this.isChannelConfiguredWithCaching(channelModel) && !isCacheSizeEqual(channelModel.config, config)) {
             throw new Error(
                 `A channel already exists with the name '${String(
@@ -185,11 +189,14 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         return this.createChannelImpl<K>(channelName, config).channel;
     }
 
-    private createChannelImpl<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannelModel<T[K]> {
+    private createChannelImpl<K extends Extract<keyof T, string>>(
+        channelName: K,
+        config?: IMessageBrokerConfig,
+    ): IChannelModel<T[K], K> {
         let subscription: Subscription | undefined;
         const adapterObservables = this.getOrCreateAdapterObservables(channelName);
         let observable = merge(
-            this.messagePublisher.pipe(filter((message) => message.channelName === channelName)),
+            this.messagePublisher.pipe(filter(this.filterMessagesByChannelName(channelName))),
             ...adapterObservables,
         );
 
@@ -200,10 +207,10 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         }
 
         const publishFunction = (data?: T[K], type?: string): void => {
-            const message = this.createMessage(channelName, data, type);
+            const message = this.createMessage(channelName, data as T[K], type);
             this.messagePublisher.next(message);
             Object.entries(this.adapters).forEach(([id, adapter]) => {
-                adapter.sendMessage(channelName, message).catch((error) => {
+                adapter.sendMessage(message).catch((error) => {
                     this.errorStream.next({
                         adapterId: id,
                         channelName,
@@ -216,12 +223,12 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         };
 
         // Stream should return a deferred observable
-        const channel: IChannel<T[K]> = {
+        const channel: IChannel<T[K], K> = {
             stream: this.getDeferredObservable<K>(channelName),
             publish: publishFunction,
         };
 
-        let channelModel: IChannelModel<T[K]> = {
+        let channelModel: IChannelModel<T[K], K> = {
             observable,
             channel,
         };
@@ -233,9 +240,13 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         return channelModel;
     }
 
-    private createMessage<K extends keyof T, D = any>(channelName: K, data: D, type?: string): IMessage<D> {
+    public createMessage<K extends Extract<keyof T, string>, D = any, TType extends string = string>(
+        channelName: K,
+        data: D,
+        type?: TType,
+    ): IMessage<D, K, TType> {
         return {
-            channelName: channelName as string,
+            channelName,
             data,
             type,
             timestamp: Date.now(),
@@ -244,9 +255,11 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         };
     }
 
-    private getOrCreateAdapterObservables<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>>[] {
+    private getOrCreateAdapterObservables<K extends Extract<keyof T, string>>(
+        channelName: K,
+    ): Observable<IMessage<T[K], K>>[] {
         const channelAdapterObs = this.adapterObservables[channelName] ?? (this.adapterObservables[channelName] = {});
-        const adapterObservables: Observable<IMessage<T[K]>>[] = [];
+        const adapterObservables: Observable<IMessage<T[K], K>>[] = [];
 
         Object.entries(this.adapters).forEach(([adapterId, adapter]) => {
             if (!channelAdapterObs[adapterId]) {
@@ -257,7 +270,7 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
 
                 // Create filtered observable for this channel
                 const filteredObservable = this.adapterStreams[adapterId].pipe(
-                    filter((message) => message.channelName === channelName),
+                    filter(this.filterMessagesByChannelName(channelName)),
                 );
 
                 channelAdapterObs[adapterId] = filteredObservable;
@@ -270,13 +283,19 @@ export class MessageBroker<T = any> implements IMessageBroker<T> {
         return adapterObservables;
     }
 
-    private cleanupAdapterObservables<K extends keyof T>(channelName: K): void {
+    private cleanupAdapterObservables<K extends Extract<keyof T, string>>(channelName: K): void {
         delete this.adapterObservables[channelName];
     }
 
-    private isChannelConfiguredWithCaching<K extends keyof T>(
+    private isChannelConfiguredWithCaching<K extends Extract<keyof T, string>>(
         channel: IChannelModel<T[K]> | undefined,
     ): channel is RequiredPick<IChannelModel<T[K]>, 'config' | 'subscription'> {
         return channel != null && channel.subscription != null;
+    }
+
+    private filterMessagesByChannelName<K extends Extract<keyof T, string>>(channelName: K) {
+        return (message: IMessage): message is IMessage<T[K], K> => {
+            return message.channelName === channelName;
+        };
     }
 }

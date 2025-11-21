@@ -1,4 +1,4 @@
-name: Build
+name: Build with latest dependencies
 
 on:
     push:
@@ -22,4 +22,7 @@ jobs:
               with:
                   node-version: ${{ matrix.node-version }}
             - run: npm ci
+            - run: npm uninstall rxjs @morgan-stanley/needle uuid
+            - run: npm install rxjs@^7 @morgan-stanley/needle@^0 uuid@^13
+            - run: npm ls @morgan-stanley/needle uuid rxjs
             - run: npm run build:release

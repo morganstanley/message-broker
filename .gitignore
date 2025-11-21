@@ -6,4 +6,4 @@ reports/
 *.tgz
 npm-debug.log
 npm
-/package-lock.json
+coverage/
