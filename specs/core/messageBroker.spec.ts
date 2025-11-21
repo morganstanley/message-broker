@@ -1,16 +1,12 @@
 import * as Needle from '@morgan-stanley/needle';
-import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
 import { map } from 'rxjs/operators';
 import { vi } from 'vitest';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { IMessage, IMessageBrokerConfig, IRSVPConfig } from '../../main/contracts/contracts.js';
+import { IMessage, IMessageBrokerConfig } from '../../main/contracts/contracts.js';
 import { MessageBroker, messageBroker } from '../../main/core/messageBroker.js';
-import { ResponseBroker } from '../../main/core/rsvp-mediator.js';
 
 describe('MessageBroker', () => {
-    let mockRSVPMediator: IMocked<ResponseBroker<any>>;
-
     vi.mock(import('uuid'), async (importOriginal) => {
         const mod = await importOriginal();
         return {
@@ -19,12 +15,8 @@ describe('MessageBroker', () => {
         };
     });
 
-    beforeEach(() => {
-        mockRSVPMediator = Mock.create<ResponseBroker<any>>().setup(setupFunction('rsvp'));
-    });
-
     function getInstance<T extends Record<string, any>>(): MessageBroker<T> {
-        return new MessageBroker<T>(mockRSVPMediator.mock);
+        return new MessageBroker<T>();
     }
 
     it('should create instance', () => {
@@ -158,23 +150,15 @@ describe('MessageBroker', () => {
         expect(message!.data).toBeUndefined();
     });
 
-    interface IMySampleBroker extends IRSVPConfig {
+    interface IMySampleBroker {
         channelOne: string;
         channelTwo: number;
         channelThree: Date;
-        rsvp: {
-            bootstrap: {
-                payload: { data: 'myData' };
-                response: string[];
-            };
-        };
     }
 
     describe('Typing', () => {
         it('should return a typed push function', () => {
-            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>(
-                mockRSVPMediator.mock,
-            );
+            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>();
 
             const stringChannel = messageBroker.create('channelOne');
             const numberChannel = messageBroker.create('channelTwo');
@@ -191,9 +175,7 @@ describe('MessageBroker', () => {
         });
 
         it('should return a typed channel', () => {
-            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>(
-                mockRSVPMediator.mock,
-            );
+            const messageBroker: MessageBroker<IMySampleBroker> = new MessageBroker<IMySampleBroker>();
 
             const stringChannel = messageBroker.get('channelOne');
             const numberChannel = messageBroker.get('channelTwo');
@@ -349,29 +331,6 @@ describe('MessageBroker', () => {
             expect(streamTwoMessages.length).toEqual(2);
             verifyMessage(streamTwoMessages[0], 'Hello World Two');
             verifyMessage(streamTwoMessages[1], 'Hello World Three');
-        });
-    });
-
-    describe('RSVP', () => {
-        it('should call rsvp mediator when passing a payload', () => {
-            const instance = getInstance<IMySampleBroker>();
-            instance.rsvp('bootstrap', { data: 'myData' });
-
-            expect(
-                mockRSVPMediator.withFunction('rsvp').withParametersEqualTo('bootstrap', { data: 'myData' }),
-            ).wasCalledOnce();
-        });
-
-        it('should call rsvp mediator when passing a handler', () => {
-            const instance = getInstance<IMySampleBroker>();
-            const handler = () => ['rsvpResponse'];
-            instance.rsvp('bootstrap', handler);
-
-            expect(
-                mockRSVPMediator
-                    .withFunction('rsvp')
-                    .withParametersEqualTo('bootstrap', (callBack: any) => handler === callBack),
-            ).wasCalledOnce();
         });
     });
 

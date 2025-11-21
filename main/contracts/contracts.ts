@@ -87,17 +87,6 @@ export interface IMessageBroker<T extends Record<string, any> = Record<string, a
     dispose<K extends Extract<keyof T, string>>(channelName: K): void;
 
     /**
-     * RSVP function is analogous to the publish function except it's synchronous and expects a response from participants immediately.
-     * @param channelName The channel name we wish to broadcast upon.
-     * @param payload The payload we are going to send for our rsvp request.
-     */
-    rsvp<K extends keyof RSVPOf<T>>(channelName: K, payload: RSVPPayload<T>): RSVPResponse<T>[];
-    /***
-     * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type.
-     */
-    rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
-
-    /**
      * Register an adapter with the message broker
      * @param adapter The adapter to register
      * @returns The ID of the registered adapter
@@ -143,32 +132,33 @@ export interface IMessageBrokerConfig {
     replayCacheSize?: number;
 }
 
+export interface IResponseChannel {
+    payload: any;
+    response: any;
+}
+
 /**
  * Represents RSVP configuration that is associated with the messageBroker type that is used during creation.
  */
-export interface IRSVPConfig {
-    /**
-     * A map of RSVP channel names to their corresponding payload and response types
-     */
-    rsvp: { [s: string]: { payload: any; response: any } };
-}
+export type IResponseChannels = Record<string, IResponseChannel>;
 
-export type RSVPOf<T> = T extends IRSVPConfig ? T['rsvp'] : never;
 /**
  * RSVPPayload type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the RSVP channel to the
  * payload type.
  */
-export type RSVPPayload<T> = T extends IRSVPConfig ? T['rsvp'][keyof T['rsvp']]['payload'] : never;
+export type ResponsePayload<T extends IResponseChannels, K extends keyof T> = T[K]['payload'];
 /**
  * RSVPResponse type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the RSVP channel to the
  * response type.
  */
-export type RSVPResponse<T> = T extends IRSVPConfig ? T['rsvp'][keyof T['rsvp']]['response'] : never;
+export type ResponseReply<T extends IResponseChannels, K extends keyof T> = T[K]['response'];
 /**
  * RSVPHandler type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the arguments and the return types
  * of the RSVP handler function.
  */
-export type RSVPHandler<T> = T extends IRSVPConfig ? (mesage: IMessage<RSVPPayload<T>>) => RSVPResponse<T> : never;
+export type ResponseHandler<T extends IResponseChannels, K extends keyof T> = (
+    mesage: IMessage<ResponsePayload<T, K>>,
+) => ResponseReply<T, K>;
 
 /***
  * Provides a reference to a responder.

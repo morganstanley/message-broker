@@ -4,7 +4,6 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { IAdapterError, IMessage, IMessageBroker, IMessageBrokerAdapter } from '../../main/contracts/contracts.js';
 import { MessageBroker } from '../../main/core/messageBroker.js';
-import { ResponseBroker } from '../../main/core/rsvp-mediator.js';
 
 interface ITestChannels {
     'test-channel': {
@@ -17,14 +16,12 @@ interface ITestChannels {
 
 describe('MessageBroker Adapter', () => {
     let broker: IMessageBroker<ITestChannels>;
-    let mockRSVPMediator: IMocked<ResponseBroker<ITestChannels>>;
     let mockAdapter: IMocked<IMessageBrokerAdapter<ITestChannels>>;
     let adapterMessagesStream: Subject<IMessage>;
 
     beforeEach(() => {
         adapterMessagesStream = new Subject<IMessage>();
 
-        mockRSVPMediator = Mock.create<ResponseBroker<ITestChannels>>().setup(setupFunction('rsvp'));
         broker = getInstance<ITestChannels>();
         mockAdapter = Mock.create<IMessageBrokerAdapter<ITestChannels>>().setup(
             setupFunction('connect', () => Promise.resolve()),
@@ -35,7 +32,7 @@ describe('MessageBroker Adapter', () => {
     });
 
     function getInstance<T extends Record<string, any>>(): IMessageBroker<T> {
-        return new MessageBroker<T>(mockRSVPMediator.mock);
+        return new MessageBroker<T>();
     }
 
     it('should register adapter successfully', async () => {

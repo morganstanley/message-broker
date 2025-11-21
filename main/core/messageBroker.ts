@@ -11,15 +11,9 @@ import {
     IMessageBroker,
     IMessageBrokerAdapter,
     IMessageBrokerConfig,
-    IResponderRef,
     RequiredPick,
-    RSVPHandler,
-    RSVPOf,
-    RSVPPayload,
-    RSVPResponse,
 } from '../contracts/contracts.js';
 import { isCacheSizeEqual } from '../functions/helper.functions.js';
-import { ResponseBroker } from './rsvp-mediator.js';
 
 type ChannelModelLookup<T extends Record<string, any>> = { [P in Extract<keyof T, string>]?: IChannelModel<T[P], P> };
 type AdapterObservableLookup<T> = {
@@ -42,7 +36,7 @@ export function messageBroker<T extends Record<string, any>>(): IMessageBroker<T
 /**
  * Represents a messageBroker. Using the 'new' operator is discouraged, instead use the messageBroker() function or dependency injection.
  */
-@Injectable({ metadata: [ResponseBroker] })
+@Injectable({ metadata: [] })
 export class MessageBroker<T extends Record<string, any> = Record<string, any>> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
     private messagePublisher = new Subject<IMessage<any>>();
@@ -51,12 +45,15 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
     private adapterObservables: AdapterObservableLookup<T> = {};
     private adapterStreams: AdapterStreamLookup = {};
 
-    constructor(private rsvpMediator: ResponseBroker<T>) {}
-
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
      * No caching is set by default
      *
+    rsvp<K extends keyof RSVPOf<T>>(channelName: K, payload: RSVPPayload<T>): RSVPResponse<T>[];
+    rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
+    rsvp(channelName: unknown, handler: unknown): IResponderRef | RSVPResponse<T>[] {
+        throw new Error('Method not implemented.');
+    }
      * @param channelName - name of the channel to create
      * @param config - optional config object that determines number of messages to cache
      * @returns IChannel
@@ -84,23 +81,6 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
      */
     public get<K extends Extract<keyof T, string>>(channelName: K): Observable<IMessage<T[K], K>> {
         return this.getDeferredObservable<K>(channelName);
-    }
-
-    /**
-     * RSVP function is analogous to the publish function except it's synchronous and expects a response from participants immediately.
-     * @param channelName The channel name we wish to broadcast upon
-     * @param payload The payload we are going to send for our rsvp request
-     */
-    public rsvp<K extends keyof RSVPOf<T>>(channelName: K, payload: RSVPPayload<T>): RSVPResponse<T>[];
-    /***
-     * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type
-     */
-    public rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
-    public rsvp<K extends keyof RSVPOf<T>>(
-        channelName: K,
-        payloadOrHandler: RSVPPayload<T> | RSVPHandler<T>,
-    ): IResponderRef | RSVPResponse<T>[] {
-        return this.rsvpMediator.rsvp(channelName, payloadOrHandler);
     }
 
     /**
