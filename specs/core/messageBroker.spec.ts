@@ -6,10 +6,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { IMessage, IMessageBrokerConfig, IRSVPConfig } from '../../main/contracts/contracts.js';
 import { MessageBroker, messageBroker } from '../../main/core/messageBroker.js';
-import { RSVPMediator } from '../../main/core/rsvp-mediator.js';
+import { ResponseBroker } from '../../main/core/rsvp-mediator.js';
 
 describe('MessageBroker', () => {
-    let mockRSVPMediator: IMocked<RSVPMediator<any>>;
+    let mockRSVPMediator: IMocked<ResponseBroker<any>>;
 
     vi.mock(import('uuid'), async (importOriginal) => {
         const mod = await importOriginal();
@@ -20,7 +20,7 @@ describe('MessageBroker', () => {
     });
 
     beforeEach(() => {
-        mockRSVPMediator = Mock.create<RSVPMediator<any>>().setup(setupFunction('rsvp'));
+        mockRSVPMediator = Mock.create<ResponseBroker<any>>().setup(setupFunction('rsvp'));
     });
 
     function getInstance<T extends Record<string, any>>(): MessageBroker<T> {

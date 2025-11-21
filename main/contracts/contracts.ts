@@ -3,24 +3,24 @@ import { Observable, Subscription } from 'rxjs';
 /**
  * Returned when a messageBroker channel is created.
  */
-export interface IChannel<T extends string = string> {
+export interface IChannel<TData = any, TChannel extends string = string> {
     /**
      * Publish a payload to subscribers, optional type can be provided for granular control
      */
-    publish: (data?: T, type?: string) => void;
+    publish: (data?: TData, type?: string) => void;
     /**
      * Observable to subscribe to messages published onto this channel
      */
-    stream: Observable<IMessage<T>>;
+    stream: Observable<IMessage<TData, TChannel>>;
 }
 
 /**
  * Represents a previous created channel which is stored within the channel lookup.
  * This is an internal detail and should not be exposed publicly
  */
-export interface IChannelModel<T extends string = string> {
-    observable: Observable<IMessage<T>>;
-    channel: IChannel<T>;
+export interface IChannelModel<TData = any, TChannel extends string = string> {
+    observable: Observable<IMessage<TData, TChannel>>;
+    channel: IChannel<TData, TChannel>;
     config?: IMessageBrokerConfig;
     subscription?: Subscription;
 }
@@ -30,7 +30,7 @@ export type RequiredPick<T, K extends keyof T> = Required<Pick<T, K>> & T;
 /**
  * Represents a message which passed over the messageBroker channels. All published payloads are wrapped in a Message.
  */
-export interface IMessage<TChannel extends string = string, TData = any, TType extends string = string> {
+export interface IMessage<TData = any, TChannel extends string = string, TType extends string = string> {
     /**
      * The name of the channel that the message is published on.
      */
@@ -69,7 +69,7 @@ export interface IMessageBroker<T extends Record<string, any> = Record<string, a
      * @param config - Optional config object that determines number of messages to cache.
      * @returns IChannel
      */
-    create<K extends Extract<keyof T, string>>(channelName: K, config?: IMessageBrokerConfig): IChannel<T[K]>;
+    create<K extends Extract<keyof T, string>>(channelName: K, config?: IMessageBrokerConfig): IChannel<T[K], K>;
 
     /**
      * Gets the channel with the given channelName. Any messages
@@ -77,7 +77,7 @@ export interface IMessageBroker<T extends Record<string, any> = Record<string, a
      * @param channelName Name of the messageBroker channel.
      * @returns Observable of IMessage
      */
-    get<K extends Extract<keyof T, string>>(channelName: K): Observable<IMessage<T[K]>>;
+    get<K extends Extract<keyof T, string>>(channelName: K): Observable<IMessage<T[K], K>>;
 
     /**
      * Dispose of all existing subscriptions and configurations for a
@@ -87,7 +87,7 @@ export interface IMessageBroker<T extends Record<string, any> = Record<string, a
     dispose<K extends Extract<keyof T, string>>(channelName: K): void;
 
     /**
-     * RSVP function is analogous to the publish function except it's synchronous and expects a response from particpants immediately.
+     * RSVP function is analogous to the publish function except it's synchronous and expects a response from participants immediately.
      * @param channelName The channel name we wish to broadcast upon.
      * @param payload The payload we are going to send for our rsvp request.
      */
@@ -119,6 +119,18 @@ export interface IMessageBroker<T extends Record<string, any> = Record<string, a
      * Get error stream for adapter failures
      */
     getErrorStream(): Observable<IAdapterError<T>>;
+
+    /**
+     * Creates a message with a uuid and timestamp
+     * @param channelName
+     * @param data
+     * @param type
+     */
+    createMessage<K extends Extract<keyof T, string>, D = any, TType extends string = string>(
+        channelName: K,
+        data: D,
+        type?: TType,
+    ): IMessage<D, K, TType>;
 }
 
 /**
@@ -193,7 +205,7 @@ export interface IMessageBrokerAdapter<T extends Record<string, any> = Record<st
      * Send a message to the external system
      * Returns a promise that resolves when message is sent
      */
-    sendMessage<TChannel extends Extract<keyof T, string>>(message: IMessage<TChannel>): Promise<void>;
+    sendMessage<TChannel extends Extract<keyof T, string>>(message: IMessage<T[TChannel], TChannel>): Promise<void>;
 
     /**
      * Get all messages from the external system
@@ -219,12 +231,12 @@ export interface IAdapterError<T extends Record<string, any>> {
     /**
      * The channel name where the error occurred
      */
-    channelName?: keyof T;
+    channelName?: Extract<keyof T, string>;
 
     /**
      * The message that failed to send
      */
-    message?: IMessage<Extract<keyof T, string>>;
+    message?: IMessage<any, Extract<keyof T, string>>;
 
     /**
      * The error that occurred

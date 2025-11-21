@@ -13,7 +13,7 @@ type ResponderLookup<T> = { [P in keyof T]?: IResponderRefInternal[] };
  * Handles the lifecycle and execution of RSVP handlers.
  */
 @Injectable({ metadata: [] })
-export class RSVPMediator<T> {
+export class ResponseBroker<T> {
     private rsvps: ResponderLookup<RSVPOf<T>> = {};
 
     // Accepts a channelName and a payload or a handler. Passing a payload will invoke the execute function on every registered handler with the

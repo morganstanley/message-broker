@@ -1,23 +1,24 @@
 import { assert, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { IRSVPConfig, RSVPResponse } from '../../main/contracts/contracts.js';
-import { RSVPMediator } from '../../main/core/rsvp-mediator.js';
+import { ResponseBroker } from '../../main/core/rsvp-mediator.js';
 
 vi.mock('uuid', () => ({ v4: () => vi.fn().mockReturnValue('mockedId') }));
+
 describe('RSVPMediator', () => {
-    function getInstance<T = any>(): RSVPMediator<T> {
-        return new RSVPMediator<T>();
+    function getInstance<T = any>(): ResponseBroker<T> {
+        return new ResponseBroker<T>();
     }
 
     interface MockConfig extends IRSVPConfig {
         rsvp: {
             rsvpChannel: {
                 payload: { data: string };
-                response: string;
+                response: 'one' | 'two' | 'three';
             };
             noMatchChannel: {
                 payload: { data: string };
-                response: string;
+                response: 'A' | 'B' | 'C';
             };
         };
     }
@@ -41,7 +42,7 @@ describe('RSVPMediator', () => {
         let invoked = false;
         instance.rsvp('rsvpChannel', () => {
             invoked = true;
-            return 'Response 1';
+            return 'one';
         });
 
         instance.rsvp('rsvpChannel', { data: 'bar' });
@@ -52,7 +53,7 @@ describe('RSVPMediator', () => {
     it('should invoke the responders handler when rsvp (publish) invoked', () => {
         const instance = getInstance<MockConfig>();
         instance.rsvp('rsvpChannel', () => {
-            return 'Response 1';
+            return 'two';
         });
 
         const results = instance.rsvp('rsvpChannel', { data: 'bar' });
