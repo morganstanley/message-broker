@@ -49,11 +49,7 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
      * No caching is set by default
      *
-    rsvp<K extends keyof RSVPOf<T>>(channelName: K, payload: RSVPPayload<T>): RSVPResponse<T>[];
-    rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
-    rsvp(channelName: unknown, handler: unknown): IResponderRef | RSVPResponse<T>[] {
-        throw new Error('Method not implemented.');
-    }
+     *
      * @param channelName - name of the channel to create
      * @param config - optional config object that determines number of messages to cache
      * @returns IChannel
