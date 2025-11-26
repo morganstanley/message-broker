@@ -51,10 +51,6 @@ export interface IMessage<TData = any, TChannel extends string = string, TType e
      * Unique id of the message.
      */
     readonly id: string;
-    /**
-     * Indicates whether the message has been handled by a subscriber. This property should be set by consuming application.
-     */
-    isHandled: boolean;
 }
 
 /**

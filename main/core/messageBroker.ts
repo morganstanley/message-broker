@@ -235,7 +235,6 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
             type,
             timestamp: Date.now(),
             id: uuid(),
-            isHandled: false,
         };
     }
 

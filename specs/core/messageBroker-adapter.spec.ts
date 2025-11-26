@@ -113,7 +113,6 @@ describe('MessageBroker Adapter', () => {
             data: { test: 'external-data' },
             timestamp: Date.now(),
             id: 'external-id',
-            isHandled: false,
         };
 
         adapterMessagesStream.next(externalMessage);
@@ -133,7 +132,6 @@ describe('MessageBroker Adapter', () => {
             data: { test: 'external-data' },
             timestamp: Date.now(),
             id: 'external-id',
-            isHandled: false,
         };
 
         adapterMessagesStream.next(externalMessage);
@@ -243,7 +241,6 @@ describe('MessageBroker Adapter', () => {
             data: { test: 'external-data-cached' },
             timestamp: Date.now(),
             id: 'external-id-cached',
-            isHandled: false,
         };
 
         adapterMessagesStream.next(externalMessage);
