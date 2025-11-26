@@ -1,0 +1,51 @@
+---
+order: 4
+title: Response Broker
+---
+
+The Response Broker provides a simple request/response model that collects replies from registered responders for a named channel.
+
+Unlike a normal publish/subscribe channel, the Response Broker is intended to be used when you want to collate return values from multiple responders for a single request.
+
+The core class is `ResponseBroker<T extends IResponseChannels>` and exposes two primary operations:
+
+- `collate(channelName, payload)` — invoke all registered responders for `channelName` with the supplied payload and return their replies.
+- `registerResponder(channelName, handler)` — register a responder function for the channel; it returns an `IResponderRef` with a `disconnect()` method.
+
+Below is a minimal contract and examples showing how to call `collate` and how to register a responder.
+
+```typescript
+type IMessageChannels = {
+    myResponseChannel: {
+        payload: { data: string };
+        response: number;
+    };
+};
+
+// Create or obtain a ResponseBroker instance (depends on your app wiring)
+const responseBroker = new ResponseBroker<IMessageChannels>();
+
+// --- Collate (request)
+// Call collate to call all responders for the channel and get an array of responses.
+const results: number[] = responseBroker.collate('myResponseChannel', { data: 'abcde' });
+```
+
+### Register a responder
+
+Registering a responder is done via `registerResponder`. The handler receives the payload (the implementation expects the raw payload) and should return a reply of the configured `response` type.
+
+```typescript
+const responder = responseBroker.registerResponder('myResponseChannel', payload => {
+    // perform work and return a response
+    return payload.data.length;
+});
+```
+
+### Respond with manual disconnect
+
+`registerResponder` returns an `IResponderRef` which exposes `disconnect()` to stop receiving requests for that channel.
+
+```typescript
+// Later, when you no longer want to respond:
+responder.disconnect();
+```
