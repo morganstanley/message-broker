@@ -3,7 +3,7 @@ import { Observable, Subscription } from 'rxjs';
 /**
  * Returned when a messageBroker channel is created.
  */
-export interface IChannel<TData = any, TChannel extends string = string> {
+export interface IChannel<TData = unknown, TChannel extends string = string> {
     /**
      * Publish a payload to subscribers, optional type can be provided for granular control
      */
@@ -18,7 +18,7 @@ export interface IChannel<TData = any, TChannel extends string = string> {
  * Represents a previous created channel which is stored within the channel lookup.
  * This is an internal detail and should not be exposed publicly
  */
-export interface IChannelModel<TData = any, TChannel extends string = string> {
+export interface IChannelModel<TData = unknown, TChannel extends string = string> {
     observable: Observable<IMessage<TData, TChannel>>;
     channel: IChannel<TData, TChannel>;
     config?: IMessageBrokerConfig;
@@ -30,7 +30,7 @@ export type RequiredPick<T, K extends keyof T> = Required<Pick<T, K>> & T;
 /**
  * Represents a message which passed over the messageBroker channels. All published payloads are wrapped in a Message.
  */
-export interface IMessage<TData = any, TChannel extends string = string, TType extends string = string> {
+export interface IMessage<TData = unknown, TChannel extends string = string, TType extends string = string> {
     /**
      * The name of the channel that the message is published on.
      */
@@ -79,7 +79,7 @@ export interface IResponseBroker<T extends IResponseChannels> {
 /**
  * Represents a messageBroker and provides access to the core features which includes publishing/subscribing to messages and RSVP.
  */
-export interface IMessageBroker<T extends Record<string, any> = Record<string, any>> {
+export interface IMessageBroker<T extends Record<string, any> = Record<string, unknown>> {
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
      * No caching is set by default
@@ -151,9 +151,9 @@ export interface IMessageBrokerConfig {
     replayCacheSize?: number;
 }
 
-export interface IResponseChannel {
-    payload: any;
-    response: any;
+export interface IResponseChannel<TPayload = unknown, TResponse = unknown> {
+    payload: TPayload;
+    response: TResponse;
 }
 
 /**
@@ -176,7 +176,7 @@ export type ResponseReply<T extends IResponseChannels, K extends keyof T> = T[K]
  * of the RSVP handler function.
  */
 export type ResponseHandler<T extends IResponseChannels, K extends keyof T> = (
-    mesage: IMessage<ResponsePayload<T, K>>,
+    message: IMessage<ResponsePayload<T, K>>,
 ) => ResponseReply<T, K>;
 
 /***
@@ -197,7 +197,7 @@ export interface IResponderRef {
 /**
  * Base interface for message broker adapters that integrate with external messaging systems
  */
-export interface IMessageBrokerAdapter<T extends Record<string, any> = Record<string, any>> {
+export interface IMessageBrokerAdapter<T extends Record<string, any> = Record<string, unknown>> {
     /**
      * Connect to the external messaging system
      * Returns a promise that resolves when connection is established
