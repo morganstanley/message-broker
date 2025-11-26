@@ -1,5 +1,5 @@
 import { get, Injectable } from '@morgan-stanley/needle';
-import { defer, merge, Observable, Subject, Subscription } from 'rxjs';
+import { defer, Observable, Subject, Subscription } from 'rxjs';
 import { filter, shareReplay } from 'rxjs/operators';
 import { v4 as uuid } from 'uuid';
 
@@ -16,10 +16,6 @@ import {
 import { isCacheSizeEqual } from '../functions/helper.functions.js';
 
 type ChannelModelLookup<T extends Record<string, any>> = { [P in Extract<keyof T, string>]?: IChannelModel<T[P], P> };
-type AdapterObservableLookup<T> = {
-    [P in Extract<keyof T, string>]?: { [adapterId: string]: Observable<IMessage<T[P], P>> };
-};
-type AdapterStreamLookup = { [adapterId: string]: Observable<IMessage<any>> };
 
 type AdapterId = string;
 
@@ -42,8 +38,7 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
     private messagePublisher = new Subject<IMessage<any>>();
     private adapters: Record<AdapterId, IMessageBrokerAdapter<T>> = {};
     private errorStream = new Subject<IAdapterError<T>>();
-    private adapterObservables: AdapterObservableLookup<T> = {};
-    private adapterStreams: AdapterStreamLookup = {};
+    private adapterSubscriptions: Record<string, Subscription> = {};
 
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
@@ -89,7 +84,6 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
         if (this.isChannelConfiguredWithCaching(channel)) {
             channel.subscription.unsubscribe();
         }
-        this.cleanupAdapterObservables(channelName);
         delete this.channelLookup[channelName];
     }
 
@@ -110,6 +104,10 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
             });
         });
 
+        this.adapterSubscriptions[adapterId] = adapter.getMessageStream().subscribe((message) => {
+            this.messagePublisher.next(message);
+        });
+
         return adapterId;
     }
 
@@ -126,16 +124,10 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
             });
         });
 
-        delete this.adapters[adapterId];
-        delete this.adapterStreams[adapterId];
+        this.adapterSubscriptions[adapterId]?.unsubscribe();
 
-        // Clean up channel-specific observables for this adapter
-        Object.keys(this.adapterObservables).forEach((channelName) => {
-            const channelObs = this.adapterObservables[channelName];
-            if (channelObs) {
-                delete channelObs[adapterId];
-            }
-        });
+        delete this.adapters[adapterId];
+        delete this.adapterSubscriptions[adapterId];
     }
 
     /**
@@ -190,11 +182,7 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
         config?: IMessageBrokerConfig,
     ): IChannelModel<T[K], K> {
         let subscription: Subscription | undefined;
-        const adapterObservables = this.getOrCreateAdapterObservables(channelName);
-        let observable = merge(
-            this.messagePublisher.pipe(filter(this.filterMessagesByChannelName(channelName))),
-            ...adapterObservables,
-        );
+        let observable = this.messagePublisher.pipe(filter(this.filterMessagesByChannelName(channelName)));
 
         const replayCacheSize = config?.replayCacheSize;
         if (replayCacheSize) {
@@ -249,38 +237,6 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
             id: uuid(),
             isHandled: false,
         };
-    }
-
-    private getOrCreateAdapterObservables<K extends Extract<keyof T, string>>(
-        channelName: K,
-    ): Observable<IMessage<T[K], K>>[] {
-        const channelAdapterObs = this.adapterObservables[channelName] ?? (this.adapterObservables[channelName] = {});
-        const adapterObservables: Observable<IMessage<T[K], K>>[] = [];
-
-        Object.entries(this.adapters).forEach(([adapterId, adapter]) => {
-            if (!channelAdapterObs[adapterId]) {
-                // Get the raw stream for this adapter (cached)
-                if (!this.adapterStreams[adapterId]) {
-                    this.adapterStreams[adapterId] = adapter.getMessageStream();
-                }
-
-                // Create filtered observable for this channel
-                const filteredObservable = this.adapterStreams[adapterId].pipe(
-                    filter(this.filterMessagesByChannelName(channelName)),
-                );
-
-                channelAdapterObs[adapterId] = filteredObservable;
-                adapterObservables.push(filteredObservable);
-            } else {
-                adapterObservables.push(channelAdapterObs[adapterId]);
-            }
-        });
-
-        return adapterObservables;
-    }
-
-    private cleanupAdapterObservables<K extends Extract<keyof T, string>>(channelName: K): void {
-        delete this.adapterObservables[channelName];
     }
 
     private isChannelConfiguredWithCaching<K extends Extract<keyof T, string>>(

@@ -1,5 +1,5 @@
 import { IMocked, Mock, setupFunction } from '@morgan-stanley/ts-mocking-bird';
-import { firstValueFrom, Observer, Subject } from 'rxjs';
+import { firstValueFrom, Observable, Observer, Subject, Subscription } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { IAdapterError, IMessage, IMessageBroker, IMessageBrokerAdapter } from '../../main/contracts/contracts.js';
@@ -22,7 +22,8 @@ describe('MessageBroker Adapter', () => {
     beforeEach(() => {
         adapterMessagesStream = new Subject<IMessage>();
 
-        broker = getInstance<ITestChannels>();
+        broker = getInstance();
+
         mockAdapter = Mock.create<IMessageBrokerAdapter<ITestChannels>>().setup(
             setupFunction('connect', () => Promise.resolve()),
             setupFunction('disconnect', () => Promise.resolve()),
@@ -31,8 +32,8 @@ describe('MessageBroker Adapter', () => {
         );
     });
 
-    function getInstance<T extends Record<string, any>>(): IMessageBroker<T> {
-        return new MessageBroker<T>();
+    function getInstance(): IMessageBroker<ITestChannels> {
+        return new MessageBroker<ITestChannels>();
     }
 
     it('should register adapter successfully', async () => {
@@ -93,10 +94,39 @@ describe('MessageBroker Adapter', () => {
         ).wasCalledOnce();
     });
 
+    it('should subscribe to adapter stream', async () => {
+        const mockObservable = Mock.create<Observable<IMessage>>().setup(setupFunction('subscribe'));
+        mockAdapter.setupFunction('getMessageStream', () => mockObservable.mock);
+
+        await broker.registerAdapter(mockAdapter.mock);
+
+        expect(mockObservable.withFunction('subscribe')).wasCalledOnce();
+    });
+
     it('should receive messages from adapter subscription', async () => {
         await broker.registerAdapter(mockAdapter.mock);
 
         const messagePromise = firstValueFrom(broker.get('test-channel'));
+
+        const externalMessage: IMessage = {
+            channelName: 'test-channel',
+            data: { test: 'external-data' },
+            timestamp: Date.now(),
+            id: 'external-id',
+            isHandled: false,
+        };
+
+        adapterMessagesStream.next(externalMessage);
+
+        const receivedMessage = await messagePromise;
+
+        expect(receivedMessage).toEqual(externalMessage);
+    });
+
+    it('should receive messages from adapter subscription when channel is created before adaptor is registered', async () => {
+        const messagePromise = firstValueFrom(broker.get('test-channel'));
+
+        await broker.registerAdapter(mockAdapter.mock);
 
         const externalMessage: IMessage = {
             channelName: 'test-channel',
@@ -119,6 +149,20 @@ describe('MessageBroker Adapter', () => {
         await broker.unregisterAdapter(adapterId);
 
         expect(mockAdapter.withFunction('disconnect')).wasCalledOnce();
+    });
+
+    it('should unsubscribe when unregistering adapter', async () => {
+        const mockSubscription = Mock.create<Subscription>().setup(setupFunction('unsubscribe'));
+        const mockObservable = Mock.create<Observable<IMessage>>().setup(
+            setupFunction('subscribe', () => mockSubscription.mock),
+        );
+        mockAdapter.setupFunction('getMessageStream', () => mockObservable.mock);
+
+        const id = await broker.registerAdapter(mockAdapter.mock);
+
+        await broker.unregisterAdapter(id);
+
+        expect(mockSubscription.withFunction('unsubscribe')).wasCalledOnce();
     });
 
     it(`should publish error on adapter disconnection failure`, async () => {
