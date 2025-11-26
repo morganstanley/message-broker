@@ -58,6 +58,25 @@ export interface IMessage<TData = any, TChannel extends string = string, TType e
 }
 
 /**
+ * Allows multiple responses to be collated from registered responders for a given channel.
+ */
+export interface IResponseBroker<T extends IResponseChannels> {
+    /**
+     * Register a handler for a given response channel
+     * @param channelName
+     * @param handler
+     */
+    registerResponder<K extends keyof T>(channelName: K, handler: ResponseHandler<T, K>): IResponderRef;
+
+    /**
+     * collate multiple responses to a given payload from registered responders
+     * @param channelName
+     * @param payload
+     */
+    collate<K extends keyof T>(channelName: K, payload: ResponsePayload<T, K>): ResponseReply<T, K>[];
+}
+
+/**
  * Represents a messageBroker and provides access to the core features which includes publishing/subscribing to messages and RSVP.
  */
 export interface IMessageBroker<T extends Record<string, any> = Record<string, any>> {

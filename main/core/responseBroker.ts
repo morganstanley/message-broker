@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 
 import {
     IResponderRef,
+    IResponseBroker,
     IResponseChannels,
     ResponseHandler,
     ResponsePayload,
@@ -16,10 +17,10 @@ interface IResponderRefInternal extends IResponderRef {
 type ResponderLookup<T extends IResponseChannels> = { [P in keyof T]?: IResponderRefInternal[] };
 
 /**
- * Handles the lifecycle and execution of RSVP handlers.
+ * Allows multiple responses to be collated from registered responders for a given channel.
  */
 @Injectable({ metadata: [] })
-export class ResponseBroker<T extends IResponseChannels> {
+export class ResponseBroker<T extends IResponseChannels> implements IResponseBroker<T> {
     private responders: ResponderLookup<T> = {};
 
     public collate<K extends keyof T>(channelName: K, payload: ResponsePayload<T, K>): ResponseReply<T, K>[] {
