@@ -172,7 +172,7 @@ export type ResponseReply<T extends IResponseChannels, K extends keyof T> = T[K]
  * of the RSVP handler function.
  */
 export type ResponseHandler<T extends IResponseChannels, K extends keyof T> = (
-    message: IMessage<ResponsePayload<T, K>>,
+    message: ResponsePayload<T, K>,
 ) => ResponseReply<T, K>;
 
 /***

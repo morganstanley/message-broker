@@ -19,6 +19,10 @@ describe('ResponseBroker', () => {
             payload: { data: string };
             response: 'A' | 'B' | 'C';
         };
+        stringChannel: {
+            payload: { data: string };
+            response: string;
+        };
     }
 
     it('should create instance', () => {
@@ -48,6 +52,19 @@ describe('ResponseBroker', () => {
 
         expect(results).toEqual(['one']);
         expect(invoked).toBe(true);
+    });
+
+    it('should pass the correct payload to the handler and return the correct response', () => {
+        const instance = getInstance<MockConfig>();
+
+        instance.registerResponder('stringChannel', (value) => {
+            // charAt ensures that payload is correctly typed as astring
+            return `${value.data}_${value.data.charAt(0)}-RESPONDED`;
+        });
+
+        const results = instance.collate('stringChannel', { data: 'payloadValue' });
+
+        expect(results).toEqual(['payloadValue_p-RESPONDED']);
     });
 
     it('should NOT return the responders response when channel names do not match', () => {
