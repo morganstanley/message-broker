@@ -3,7 +3,7 @@ order: 4
 title: RSVP
 ---
 
-The RSVP methods allow developers to define a request/response model using the messagebroker.
+The RSVP methods allow developers to define a request/response model using the messageBroker.
 Unlike a normal publish, publishing on an RSVP channel is a synchronous call that will ask all subscribers to respond with some value.
 
 An RSVP message must be sent on a special RSVP channel.
@@ -31,7 +31,7 @@ Remember, this call will be *synchronous*, so it will block until all the subscr
 When all return values have been gathered, they will be returned by the rsvp method.
 
 ```typescript
-const results: number[] = messagebroker<IMessageChannels>()
+const results: number[] = messageBroker<IMessageChannels>()
                             .rsvp('myRSVPChannel', { data: 'abcde'});
 ```
 
@@ -42,7 +42,7 @@ This function must take a parameter of the type that matches the `payload` type 
 It must then return a value which is of the same type as the `response` type in your contract.
 
 ```typescript
-messagebroker<IMessageChannels>()
+messageBroker<IMessageChannels>()
     .rsvp('myRSVPChannel', payload => {
         // Perform some work on payload
         return len(payload.data);
@@ -56,7 +56,7 @@ If for some reason you would like to stop responding to RSVP messages on a certa
 Calling this method will prevent any further messages being received.
 
 ```typescript
-const responder = messagebroker<IMessageChannels>()
+const responder = messageBroker<IMessageChannels>()
                     .rsvp('myRSVPChannel', payload => {
                         return len(payload.data);
                     });

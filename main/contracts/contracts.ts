@@ -1,26 +1,26 @@
 import { Observable, Subscription } from 'rxjs';
 
 /**
- * Returned when a messagebroker channel is created.
+ * Returned when a messageBroker channel is created.
  */
-export interface IChannel<T = any> {
+export interface IChannel<TData = any, TChannel extends string = string> {
     /**
      * Publish a payload to subscribers, optional type can be provided for granular control
      */
-    publish: (data?: T, type?: string) => void;
+    publish: (data?: TData, type?: string) => void;
     /**
      * Observable to subscribe to messages published onto this channel
      */
-    stream: Observable<IMessage<T>>;
+    stream: Observable<IMessage<TData, TChannel>>;
 }
 
 /**
  * Represents a previous created channel which is stored within the channel lookup.
  * This is an internal detail and should not be exposed publicly
  */
-export interface IChannelModel<T> {
-    observable: Observable<IMessage<T>>;
-    channel: IChannel<T>;
+export interface IChannelModel<TData = any, TChannel extends string = string> {
+    observable: Observable<IMessage<TData, TChannel>>;
+    channel: IChannel<TData, TChannel>;
     config?: IMessageBrokerConfig;
     subscription?: Subscription;
 }
@@ -28,21 +28,21 @@ export interface IChannelModel<T> {
 export type RequiredPick<T, K extends keyof T> = Required<Pick<T, K>> & T;
 
 /**
- * Represents a message which passed over the messagebroker channels. All published payloads are wrapped in a Message.
+ * Represents a message which passed over the messageBroker channels. All published payloads are wrapped in a Message.
  */
-export interface IMessage<T = any> {
+export interface IMessage<TData = any, TChannel extends string = string, TType extends string = string> {
     /**
      * The name of the channel that the message is published on.
      */
-    readonly channelName: string;
+    readonly channelName: TChannel;
     /**
      * The message type which can be defined when the message is published. This type can be leveraged for more granular control.
      */
-    readonly type?: string;
+    readonly type?: TType;
     /**
      * The payload of the message.
      */
-    readonly data: T;
+    readonly data: TData;
     /**
      * Timestamp representing when the message was published.
      */
@@ -51,16 +51,31 @@ export interface IMessage<T = any> {
      * Unique id of the message.
      */
     readonly id: string;
-    /**
-     * Indicates whether the message has been handled by a subscriber. This property should be set by consuming application.
-     */
-    isHandled: boolean;
 }
 
 /**
- * Represents a messagebroker and provides access to the core features which includes publishing/subscribing to messages and RSVP.
+ * Allows multiple responses to be collated from registered responders for a given channel.
  */
-export interface IMessageBroker<T> {
+export interface IResponseBroker<T extends IResponseChannels> {
+    /**
+     * Register a handler for a given response channel
+     * @param channelName
+     * @param handler
+     */
+    registerResponder<K extends keyof T>(channelName: K, handler: ResponseHandler<T, K>): IResponderRef;
+
+    /**
+     * collate multiple responses to a given payload from registered responders
+     * @param channelName
+     * @param payload
+     */
+    collate<K extends keyof T>(channelName: K, payload: ResponsePayload<T, K>): ResponseReply<T, K>[];
+}
+
+/**
+ * Represents a messageBroker and provides access to the core features which includes publishing/subscribing to messages and RSVP.
+ */
+export interface IMessageBroker<T extends Record<string, any> = Record<string, any>> {
     /**
      * Creates a new channel with the provided channelName. An optional config object can be passed that specifies how many messages to cache.
      * No caching is set by default
@@ -69,46 +84,35 @@ export interface IMessageBroker<T> {
      * @param config - Optional config object that determines number of messages to cache.
      * @returns IChannel
      */
-    create<K extends keyof T>(channelName: K, config?: IMessageBrokerConfig): IChannel<T[K]>;
+    create<K extends Extract<keyof T, string>>(channelName: K, config?: IMessageBrokerConfig): IChannel<T[K], K>;
 
     /**
      * Gets the channel with the given channelName. Any messages
      * published on the same channel name will be received via the subscription.
-     * @param channelName Name of the messagebroker channel.
+     * @param channelName Name of the messageBroker channel.
      * @returns Observable of IMessage
      */
-    get<K extends keyof T>(channelName: K): Observable<IMessage<T[K]>>;
+    get<K extends Extract<keyof T, string>>(channelName: K): Observable<IMessage<T[K], K>>;
 
     /**
      * Dispose of all existing subscriptions and configurations for a
      * particular channel name.
-     * @param channelName Name of the messagebroker channel.
+     * @param channelName Name of the messageBroker channel.
      */
-    dispose<K extends keyof T>(channelName: K): void;
-
-    /**
-     * RSVP function is analogous to the publish function except it's synchronous and expects a response from particpants immediately.
-     * @param channelName The channel name we wish to broadcast upon.
-     * @param payload The payload we are going to send for our rsvp request.
-     */
-    rsvp<K extends keyof RSVPOf<T>>(channelName: K, payload: RSVPPayload<T>): RSVPResponse<T>[];
-    /***
-     * This RSVP function is used by responders and is analogous to the 'Get' function. Responders when invoked must return the required response value type.
-     */
-    rsvp<K extends keyof RSVPOf<T>>(channelName: K, handler: RSVPHandler<T>): IResponderRef;
+    dispose<K extends Extract<keyof T, string>>(channelName: K): void;
 
     /**
      * Register an adapter with the message broker
      * @param adapter The adapter to register
      * @returns The ID of the registered adapter
      */
-    registerAdapter(adapter: IMessageBrokerAdapter<T>): string;
+    registerAdapter(adapter: IMessageBrokerAdapter<T>): Promise<string>;
 
     /**
      * Unregister an adapter from the message broker
      * @param adapterId The ID of the adapter to unregister
      */
-    unregisterAdapter(adapterId: string): void;
+    unregisterAdapter(adapterId: string): Promise<void>;
 
     /**
      * Get all registered adapters
@@ -119,6 +123,18 @@ export interface IMessageBroker<T> {
      * Get error stream for adapter failures
      */
     getErrorStream(): Observable<IAdapterError<T>>;
+
+    /**
+     * Creates a message with a uuid and timestamp
+     * @param channelName
+     * @param data
+     * @param type
+     */
+    createMessage<K extends Extract<keyof T, string>, D = any, TType extends string = string>(
+        channelName: K,
+        data: D,
+        type?: TType,
+    ): IMessage<D, K, TType>;
 }
 
 /**
@@ -131,32 +147,33 @@ export interface IMessageBrokerConfig {
     replayCacheSize?: number;
 }
 
-/**
- * Represents RSVP configuration that is associated with the messagebroker type that is used during creation.
- */
-export interface IRSVPConfig {
-    /**
-     * A map of RSVP channel names to their corresponding payload and response types
-     */
-    rsvp: { [s: string]: { payload: any; response: any } };
+export interface IResponseChannel<TPayload = any, TResponse = any> {
+    payload: TPayload;
+    response: TResponse;
 }
 
-export type RSVPOf<T> = T extends IRSVPConfig ? T['rsvp'] : never;
 /**
- * RSVPPayload type as defined in RSVP property that can provided to the messagebroker on creation. This enforces the RSVP channel to the
+ * Represents RSVP configuration that is associated with the messageBroker type that is used during creation.
+ */
+export type IResponseChannels = Record<string, IResponseChannel>;
+
+/**
+ * RSVPPayload type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the RSVP channel to the
  * payload type.
  */
-export type RSVPPayload<T> = T extends IRSVPConfig ? T['rsvp'][keyof T['rsvp']]['payload'] : never;
+export type ResponsePayload<T extends IResponseChannels, K extends keyof T> = T[K]['payload'];
 /**
- * RSVPResponse type as defined in RSVP property that can provided to the messagebroker on creation. This enforces the RSVP channel to the
+ * RSVPResponse type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the RSVP channel to the
  * response type.
  */
-export type RSVPResponse<T> = T extends IRSVPConfig ? T['rsvp'][keyof T['rsvp']]['response'] : never;
+export type ResponseReply<T extends IResponseChannels, K extends keyof T> = T[K]['response'];
 /**
- * RSVPHandler type as defined in RSVP property that can provided to the messagebroker on creation. This enforces the arguments and the return types
+ * RSVPHandler type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the arguments and the return types
  * of the RSVP handler function.
  */
-export type RSVPHandler<T> = T extends IRSVPConfig ? (mesage: IMessage<RSVPPayload<T>>) => RSVPResponse<T> : never;
+export type ResponseHandler<T extends IResponseChannels, K extends keyof T> = (
+    message: ResponsePayload<T, K>,
+) => ResponseReply<T, K>;
 
 /***
  * Provides a reference to a responder.
@@ -176,13 +193,7 @@ export interface IResponderRef {
 /**
  * Base interface for message broker adapters that integrate with external messaging systems
  */
-export interface IMessageBrokerAdapter<T> {
-    /**
-     * Initialize the adapter
-     * Returns a promise that resolves when initialization is done
-     */
-    initialize(): Promise<void>;
-
+export interface IMessageBrokerAdapter<T extends Record<string, any> = Record<string, any>> {
     /**
      * Connect to the external messaging system
      * Returns a promise that resolves when connection is established
@@ -199,7 +210,7 @@ export interface IMessageBrokerAdapter<T> {
      * Send a message to the external system
      * Returns a promise that resolves when message is sent
      */
-    sendMessage(channelName: keyof T, message: IMessage): Promise<void>;
+    sendMessage<TChannel extends Extract<keyof T, string>>(message: IMessage<T[TChannel], TChannel>): Promise<void>;
 
     /**
      * Get all messages from the external system
@@ -216,7 +227,7 @@ export interface IMessageBrokerAdapter<T> {
 /**
  * Error information for adapter failures
  */
-export interface IAdapterError<T> {
+export interface IAdapterError<T extends Record<string, any>> {
     /**
      * The adapter that failed
      */
@@ -225,12 +236,12 @@ export interface IAdapterError<T> {
     /**
      * The channel name where the error occurred
      */
-    channelName: keyof T;
+    channelName?: Extract<keyof T, string>;
 
     /**
      * The message that failed to send
      */
-    message: IMessage;
+    message?: IMessage<any, Extract<keyof T, string>>;
 
     /**
      * The error that occurred
