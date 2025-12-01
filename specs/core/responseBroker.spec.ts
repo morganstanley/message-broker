@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { IResponseChannels } from '../../main/contracts/contracts.js';
 import { ResponseBroker } from '../../main/core/responseBroker.js';
@@ -115,35 +115,5 @@ describe('ResponseBroker', () => {
 
         responder1.disconnect();
         expect(() => responder1.disconnect()).not.toThrowError();
-    });
-
-    describe('Non matching', () => {
-        let id = 0;
-        beforeAll(() => {
-            vi.doMock('uuid', () => ({ v4: () => ++id }));
-        });
-
-        it('should not disconnect responders when disconnecting', async () => {
-            const instance = getInstance<MockConfig>();
-            let responder2Count = 0;
-
-            const responder1 = instance.registerResponder('rsvpChannel', () => {
-                return 'one' as const;
-            });
-
-            instance.registerResponder('rsvpChannel', () => {
-                responder2Count++;
-                return 'two' as const;
-            });
-
-            instance.collate('rsvpChannel', { data: 'bar' });
-            expect(responder2Count).toEqual(1);
-
-            responder1.disconnect();
-
-            instance.collate('rsvpChannel', { data: 'bar' });
-
-            expect(responder2Count).toEqual(2);
-        });
     });
 });

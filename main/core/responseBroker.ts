@@ -43,16 +43,15 @@ export class ResponseBroker<T extends IResponseChannels> implements IResponseBro
     }
 
     private disconnect<K extends keyof T>(channel: K, id: string): void {
-        const responders = this.responders[channel];
+        const channelResponders = this.responders[channel];
 
-        if (responders === undefined) {
+        if (channelResponders === undefined) {
             return;
         }
 
-        const responderIndex = responders.findIndex((responder) => responder.id === id);
-        responders.splice(responderIndex, 1);
+        this.responders[channel] = channelResponders.filter((responder) => responder.id !== id);
 
-        if (responders.length === 0) {
+        if (this.responders[channel].length === 0) {
             delete this.responders[channel];
         }
     }
