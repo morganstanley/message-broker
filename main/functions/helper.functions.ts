@@ -1,4 +1,4 @@
-import { IMessageBrokerConfig } from '../contracts/contracts';
+import { IMessageBrokerConfig } from '../contracts/contracts.js';
 
 export function isCacheSizeEqual(
     firstConfig: IMessageBrokerConfig | undefined,

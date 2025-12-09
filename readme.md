@@ -22,7 +22,7 @@ npm install @morgan-stanley/message-broker
 then you can start sending and receiving messages like this
 
 ```typescript
-import { messagebroker, IMessageBroker } from '@morgan-stanley/message-broker';
+import { messageBroker, IMessageBroker } from '@morgan-stanley/message-broker';
 
 interface IContracts {
     myChannel: {
@@ -30,7 +30,7 @@ interface IContracts {
     };
 }
 
-const broker: IMessageBroker<IContracts> = messagebroker<IContracts>();
+const broker: IMessageBroker<IContracts> = messageBroker<IContracts>();
 
 broker.get('myChannel').subscribe((message) => {
     console.log(message.payload);

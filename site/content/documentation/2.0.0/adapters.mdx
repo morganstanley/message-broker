@@ -13,7 +13,7 @@ Adapters implement the `IMessageBrokerAdapter<T>` interface and provide:
 - **Outbound messaging**: Messages published to internal channels are automatically sent to registered adapters
 - **Inbound messaging**: Messages received from external systems are forwarded to internal subscribers
 - **Error handling**: Adapter failures are captured and exposed via an error stream
-- **Connection management**: Initialize, connect, and disconnect from external systems
+- **Connection management**: Connect and disconnect from external systems
 
 ## Creating an Adapter
 
@@ -29,10 +29,6 @@ import { Observable } from 'rxjs';
 export class WebSocketAdapter implements IMessageBrokerAdapter<IMyChannels> {
   private socket: WebSocket | null = null;
   private messageSubject = new Subject<IMessage>();
-
-  async initialize(): Promise<void> {
-    console.log('WebSocket adapter initialized');
-  }
 
   async connect(): Promise<void> {
     this.socket = new WebSocket('ws://localhost:8080');
@@ -55,12 +51,12 @@ export class WebSocketAdapter implements IMessageBrokerAdapter<IMyChannels> {
     }
   }
 
-  async sendMessage(
-    channelName: keyof IMyChannels,
-    message: IMessage
-  ): Promise<void> {
-    if (isConnected()) {
-      this.socket.send(JSON.stringify({ channelName, message }));
+  // Note: sendMessage now receives the IMessage wrapper created by the broker
+  // (the broker will call adapter.sendMessage(message)).
+  async sendMessage(message: IMessage): Promise<void> {
+    if (this.isConnected()) {
+      // You can send the whole message or map it to the external system's shape
+      this.socket!.send(JSON.stringify(message));
     } else {
       throw new Error('WebSocket not connected');
     }
@@ -84,12 +80,7 @@ Register adapters with your message broker instance:
 const broker = messageBroker<IMyChannels>();
 const wsAdapter = new WebSocketAdapter();
 
-// Initialize and connect the adapter
-await wsAdapter.initialize();
-await wsAdapter.connect();
-
-// Register with the message broker (returns the generated adapter ID)
-const adapterId = broker.registerAdapter(wsAdapter);
+const adapterId = await broker.registerAdapter(wsAdapter);
 console.log('Adapter registered with ID:', adapterId);
 ```
 
@@ -148,7 +139,7 @@ console.log('Number of registered adapters:', Object.keys(adapters).length);
 
 ```typescript
 // Use the ID returned from registerAdapter
-broker.unregisterAdapter(adapterId);
+await broker.unregisterAdapter(adapterId);
 ```
 
 ### Check Connection Status
@@ -193,13 +184,14 @@ const adapterIds = Object.keys(adapters);
 Always implement proper error handling in your adapters:
 
 ```typescript
-async sendMessage(channelName: keyof T, message: IMessage): Promise<void> {
-    if (!this.isConnected()) {
-        throw new Error('Not connected to external system');
-    }
+async sendMessage(message: IMessage): Promise<void> {
+  if (!this.isConnected()) {
+    throw new Error('Not connected to external system');
+  }
 
-    // The message broker will catch any errors and send them to the error stream
-    await this.externalSystem.send(channelName, message);
+  // The message broker will catch any errors and send them to the error stream
+  // Map the broker IMessage into the shape expected by the external system
+  await this.externalSystem.send(message.channelName, message);
 }
 ```
 
