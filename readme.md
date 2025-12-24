@@ -1,6 +1,6 @@
 # MessageBroker
 
-![Lifecycle Active](https://badgen.net/badge/Lifecycle/Active/green)
+![Lifecycle Active](https://img.shields.io/badge/Lifecycle-Active-brightgreen)
 ![NPM](https://img.shields.io/npm/l/@morgan-stanley/message-broker)
 ![npm](https://img.shields.io/npm/v/@morgan-stanley/message-broker)
 ![NPM](https://img.shields.io/badge/types-TypeScript-blue)
