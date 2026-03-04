@@ -18,5 +18,8 @@
     "serve": "gatsby serve",
     "pub": "rimraf ../docs && mv public ../docs",
     "clean": "gatsby clean"
+  },
+  "devDependencies": {
+    "rimraf": "^6.1.3"
   }
 }
