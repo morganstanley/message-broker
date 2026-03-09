@@ -38,7 +38,7 @@
         "@morgan-stanley/ts-mocking-bird": "^1",
         "@vitest/coverage-v8": "^4.0.9",
         "concurrently": "^9",
-        "eslint": "^9",
+        "eslint": "^10",
         "eslint-config-prettier": "^10",
         "eslint-plugin-prettier": "^5",
         "eslint-plugin-simple-import-sort": "^12",
