@@ -35,7 +35,7 @@
     },
     "devDependencies": {
         "@eslint/js": "^9",
-        "@morgan-stanley/ts-mocking-bird": "^1",
+        "@morgan-stanley/ts-mocking-bird": "^2",
         "@vitest/coverage-v8": "^4.0.9",
         "concurrently": "^9",
         "eslint": "^9",
