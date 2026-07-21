@@ -3,16 +3,44 @@ order: 3
 title: Message Replaying
 ---
 
-Replaying will allow new subscriptions to receive the latest "n" number of messages. Using the messageBroker config the user can configure how many messages they want to be cached when subscriptions are made. Configs can only be provided when the messageBroker channels are created.
+Message replaying allows new subscribers to receive the latest "n" messages published on a channel. The `replayCacheSize` setting controls the maximum number of messages stored for new subscribers. This configuration can only be provided when a channel is created.
 
 ```typescript
-import { messageBroker } from "@morgan-stanley/message-broker";
+import { messageBroker } from '@morgan-stanley/message-broker';
 
-messageBroker()
-    .create('myCachedChannel', { replayCacheSize: 2 })
-    .publish({
-        payload: 'a message to all new Subscribers!'
-    });
+interface IChannels {
+    channel: string;
+}
+
+const broker = messageBroker<IChannels>();
+
+broker.create('channel', { replayCacheSize: 2 }).publish('Jupiter');
+
+broker.get('channel').subscribe((message) => {
+    console.log(message.data);
+});
+
+// Logs: Jupiter
 ```
 
-It is important to note that creating a channel with the same name but with different configurations will throw an error.
+## Channel disposal
+
+The replay cache belongs to the channel that created it. Calling `dispose` removes the channel, its configuration, and the messages stored in its replay cache.
+
+```typescript
+const broker = messageBroker<IChannels>();
+
+broker.create('channel', { replayCacheSize: 2 }).publish('Jupiter');
+
+broker.dispose('channel');
+
+broker.get('channel').subscribe((message) => {
+    console.log(message.data);
+});
+
+// Nothing is logged because the channel and its cached messages were disposed.
+```
+
+After disposal, a channel with the same name can be created again, but it starts with a new and empty replay cache.
+
+Creating an existing channel with the same name but a different configuration will throw an error.
