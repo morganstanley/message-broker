@@ -52,7 +52,7 @@
     },
     "dependencies": {
         "@morgan-stanley/needle": "^0.3.33",
-        "uuid": "^13.0.0"
+        "uuid": "^14.0.1"
     },
     "type": "module"
 }
