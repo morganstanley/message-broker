@@ -41,7 +41,7 @@
         "eslint": "^10",
         "eslint-config-prettier": "^10",
         "eslint-plugin-prettier": "^5",
-        "eslint-plugin-simple-import-sort": "^12",
+        "eslint-plugin-simple-import-sort": "^14",
         "eslint-plugin-unused-imports": "^4",
         "jiti": "^2.6.1",
         "rimraf": "^6.0.1",
