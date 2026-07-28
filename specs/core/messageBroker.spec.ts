@@ -261,9 +261,13 @@ describe('MessageBroker', () => {
             verifyMessage(streamTwoMessages[1], 'Hello World Three');
         });
 
-        it('should dipose of cached channel', () => {
+        it('should dispose of cached channel and clear cached messages', () => {
             const instance = getInstance();
-            const channel = instance.create('yourChannel', { replayCacheSize: 1 });
+            const channel = instance.create('yourChannel', {
+                replayCacheSize: 1,
+            });
+
+            channel.publish('Hello World');
 
             instance.dispose('yourChannel');
 
@@ -271,6 +275,13 @@ describe('MessageBroker', () => {
                 replayCacheSize: 1,
             });
 
+            const messages: Array<IMessage<string>> = [];
+
+            instance.get('yourChannel').subscribe((message) => {
+                messages.push(message);
+            });
+
+            expect(messages).toEqual([]);
             expect(postDisposeChannel).not.toBe(channel);
         });
     });
