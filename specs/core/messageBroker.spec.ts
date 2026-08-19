@@ -6,6 +6,14 @@ import { describe, expect, it } from 'vitest';
 import { IMessage, IMessageBrokerConfig } from '../../main/contracts/contracts.js';
 import { MessageBroker, messageBroker } from '../../main/core/messageBroker.js';
 
+vi.mock('@morgan-stanley/needle', async (importOriginal) => {
+    const mod = await importOriginal<typeof import('@morgan-stanley/needle')>();
+    return {
+        ...mod,
+        get: vi.fn(mod.get),
+    };
+});
+
 describe('MessageBroker', () => {
     vi.mock(import('uuid'), async (importOriginal) => {
         const mod = await importOriginal();
@@ -25,7 +33,9 @@ describe('MessageBroker', () => {
     });
 
     it('should create an instance via messageBroker function', () => {
-        const spyMessageBrokerGet = vi.spyOn(Needle, 'get');
+        const spyMessageBrokerGet = vi.mocked(Needle.get);
+        spyMessageBrokerGet.mockClear();
+
         const instance = messageBroker();
         expect(instance).toBeDefined();
         expect(spyMessageBrokerGet).toHaveBeenCalledExactlyOnceWith(MessageBroker);
