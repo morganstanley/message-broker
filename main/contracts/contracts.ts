@@ -1,13 +1,37 @@
 import { Observable, Subscription } from 'rxjs';
 
 /**
+ * Default shape of the free-form metadata that can accompany a message.
+ */
+export type MessageMetadata = Record<string, unknown>;
+
+/**
+ * Optional additional information that can be supplied when publishing a message.
+ */
+export interface IMessageOptions<TType extends string = string, TMetadata extends MessageMetadata = MessageMetadata> {
+    /**
+     * The message type which can be leveraged for more granular control.
+     */
+    type?: TType;
+    /**
+     * Identifies where the message originated from, e.g. the chain of components/adapters it has passed through.
+     */
+    messageSource?: string[];
+    /**
+     * Free-form, consumer defined information about the message. This is not interpreted by the message broker.
+     */
+    metadata?: TMetadata;
+}
+
+/**
  * Returned when a messageBroker channel is created.
  */
 export interface IChannel<TData = any, TChannel extends string = string> {
     /**
-     * Publish a payload to subscribers, optional type can be provided for granular control
+     * Publish a payload to subscribers. The second argument can either be a message type (string) or an options
+     * object which can specify the type, messageSource and metadata.
      */
-    publish: (data?: TData, type?: string) => void;
+    publish: (data?: TData, typeOrOptions?: string | IMessageOptions) => void;
     /**
      * Observable to subscribe to messages published onto this channel
      */
@@ -30,7 +54,12 @@ export type RequiredPick<T, K extends keyof T> = Required<Pick<T, K>> & T;
 /**
  * Represents a message which passed over the messageBroker channels. All published payloads are wrapped in a Message.
  */
-export interface IMessage<TData = any, TChannel extends string = string, TType extends string = string> {
+export interface IMessage<
+    TData = any,
+    TChannel extends string = string,
+    TType extends string = string,
+    TMetadata extends MessageMetadata = MessageMetadata,
+> {
     /**
      * The name of the channel that the message is published on.
      */
@@ -39,6 +68,14 @@ export interface IMessage<TData = any, TChannel extends string = string, TType e
      * The message type which can be defined when the message is published. This type can be leveraged for more granular control.
      */
     readonly type?: TType;
+    /**
+     * Identifies where the message originated from.
+     */
+    readonly messageSource?: string[];
+    /**
+     * Free-form, consumer defined information about the message.
+     */
+    readonly metadata?: TMetadata;
     /**
      * The payload of the message.
      */
@@ -68,8 +105,13 @@ export interface IResponseBroker<T extends IResponseChannels> {
      * collate multiple responses to a given payload from registered responders
      * @param channelName
      * @param payload
+     * @param options optional type, messageSource and metadata which are passed to each responder
      */
-    collate<K extends keyof T>(channelName: K, payload: ResponsePayload<T, K>): ResponseReply<T, K>[];
+    collate<K extends keyof T>(
+        channelName: K,
+        payload: ResponsePayload<T, K>,
+        options?: IMessageOptions,
+    ): ResponseReply<T, K>[];
 }
 
 /**
@@ -128,13 +170,18 @@ export interface IMessageBroker<T extends Record<string, any> = Record<string, a
      * Creates a message with a uuid and timestamp
      * @param channelName
      * @param data
-     * @param type
+     * @param typeOrOptions message type, or an options object specifying the type, messageSource and metadata
      */
-    createMessage<K extends Extract<keyof T, string>, D = any, TType extends string = string>(
+    createMessage<
+        K extends Extract<keyof T, string>,
+        D = any,
+        TType extends string = string,
+        TMetadata extends MessageMetadata = MessageMetadata,
+    >(
         channelName: K,
         data: D,
-        type?: TType,
-    ): IMessage<D, K, TType>;
+        typeOrOptions?: TType | IMessageOptions<TType, TMetadata>,
+    ): IMessage<D, K, TType, TMetadata>;
 }
 
 /**
@@ -173,6 +220,7 @@ export type ResponseReply<T extends IResponseChannels, K extends keyof T> = T[K]
  */
 export type ResponseHandler<T extends IResponseChannels, K extends keyof T> = (
     message: ResponsePayload<T, K>,
+    options?: IMessageOptions,
 ) => ResponseReply<T, K>;
 
 /***

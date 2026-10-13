@@ -25,6 +25,23 @@ describe('ResponseBroker', () => {
         };
     }
 
+    it('should pass options to responders', () => {
+        const instance = getInstance<MockConfig>();
+        const handler = vi.fn().mockReturnValue('one');
+        instance.registerResponder('rsvpChannel', handler);
+
+        instance.collate(
+            'rsvpChannel',
+            { data: 'bar' },
+            { type: 'myType', messageSource: ['src'], metadata: { a: 1 } },
+        );
+
+        expect(handler).toHaveBeenCalledWith(
+            { data: 'bar' },
+            { type: 'myType', messageSource: ['src'], metadata: { a: 1 } },
+        );
+    });
+
     it('should create instance', () => {
         const instance = getInstance();
         expect(instance).toBeDefined();

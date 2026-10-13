@@ -11,9 +11,11 @@ import {
     IMessageBroker,
     IMessageBrokerAdapter,
     IMessageBrokerConfig,
+    IMessageOptions,
+    MessageMetadata,
     RequiredPick,
 } from '../contracts/contracts.js';
-import { isCacheSizeEqual } from '../functions/helper.functions.js';
+import { isCacheSizeEqual, toMessageOptions } from '../functions/helper.functions.js';
 
 type ChannelModelLookup<T extends Record<string, any>> = { [P in Extract<keyof T, string>]?: IChannelModel<T[P], P> };
 
@@ -190,8 +192,8 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
             subscription = observable.subscribe();
         }
 
-        const publishFunction = (data?: T[K], type?: string): void => {
-            const message = this.createMessage(channelName, data as T[K], type);
+        const publishFunction = (data?: T[K], typeOrOptions?: string | IMessageOptions): void => {
+            const message = this.createMessage(channelName, data as T[K], typeOrOptions);
             this.messagePublisher.next(message);
             Object.entries(this.adapters).forEach(([id, adapter]) => {
                 adapter.sendMessage(message).catch((error) => {
@@ -224,15 +226,23 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
         return channelModel;
     }
 
-    public createMessage<K extends Extract<keyof T, string>, D = any, TType extends string = string>(
+    public createMessage<
+        K extends Extract<keyof T, string>,
+        D = any,
+        TType extends string = string,
+        TMetadata extends MessageMetadata = MessageMetadata,
+    >(
         channelName: K,
         data: D,
-        type?: TType,
-    ): IMessage<D, K, TType> {
+        typeOrOptions?: TType | IMessageOptions<TType, TMetadata>,
+    ): IMessage<D, K, TType, TMetadata> {
+        const { type, messageSource, metadata } = toMessageOptions(typeOrOptions);
         return {
             channelName,
             data,
             type,
+            messageSource,
+            metadata,
             timestamp: Date.now(),
             id: uuid(),
         };
