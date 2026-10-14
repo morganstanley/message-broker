@@ -1,0 +1,66 @@
+---
+order: 2
+title: Message Options
+---
+
+As well as a message type, a message can carry a `messageSource` and free-form `metadata`. These are supplied via an `IMessageOptions` object.
+
+| Option          | Description                                                                                      |
+| --------------- | ------------------------------------------------------------------------------------------------ |
+| `type`          | The message type, which can be used for more granular control                                    |
+| `messageSource` | A `string[]` identifying where the message originated, e.g. the components/adapters it passed through |
+| `metadata`      | Free-form, consumer defined information. This is not interpreted by the message broker           |
+
+## Publishing with options
+
+The second argument of `publish` (and the third argument of `createMessage`) accepts either a message type string, as before, or an `IMessageOptions` object:
+
+```typescript
+const channel = broker.create('myChannel');
+
+// still supported
+channel.publish('Hello', 'myType');
+
+// options object
+channel.publish('Hello', {
+  type: 'myType',
+  messageSource: ['my-component'],
+  metadata: { user: 'bob' },
+});
+```
+
+The values are available on the `IMessage` received by subscribers and passed to adapters:
+
+```typescript
+channel.stream.subscribe(message => {
+  console.log(message.type, message.messageSource, message.metadata);
+});
+```
+
+## Typing metadata
+
+`IMessageOptions`, `IMessage` and `createMessage` take `TType` and `TMetadata` generics. `publish`, `collate`, `ResponseHandler` and `IAdapter.sendMessage` accept the same generics. `TMetadata` can be any `object` type, so both type aliases and interfaces can be used. It defaults to `MessageMetadata` (`Record<string, unknown>`).
+
+```typescript
+interface IUserMetadata {
+  user: string;
+}
+
+const options: IMessageOptions<'myType', IUserMetadata> = {
+  type: 'myType',
+  metadata: { user: 'bob' },
+};
+
+channel.publish('Hello', options);
+const message = broker.createMessage('myChannel', 'Hello', options);
+message.metadata?.user; // string
+```
+
+> The generics are not enforced at runtime and subscribers receive a message with the default metadata type. Use a type guard when narrowing messages from a stream:
+
+```typescript
+const isUserMessage = (m: IMessage): m is IMessage<string, string, string, IUserMetadata> =>
+  typeof m.metadata?.user === 'string';
+
+channel.stream.pipe(filter(isUserMessage)).subscribe(m => console.log(m.metadata?.user));
+```

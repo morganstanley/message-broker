@@ -1,9 +1,9 @@
 import * as Needle from '@morgan-stanley/needle';
-import { map } from 'rxjs/operators';
+import { filter, map } from 'rxjs/operators';
 import { vi } from 'vitest';
 import { describe, expect, it } from 'vitest';
 
-import { IMessage, IMessageBrokerConfig } from '../../main/contracts/contracts.js';
+import { IMessage, IMessageBrokerConfig, IMessageOptions } from '../../main/contracts/contracts.js';
 import { MessageBroker, messageBroker } from '../../main/core/messageBroker.js';
 
 describe('MessageBroker', () => {
@@ -342,6 +342,67 @@ describe('MessageBroker', () => {
             expect(streamTwoMessages.length).toEqual(2);
             verifyMessage(streamTwoMessages[0], 'Hello World Two');
             verifyMessage(streamTwoMessages[1], 'Hello World Three');
+        });
+    });
+
+    describe('message options', () => {
+        it('should accept a type string for backwards compatibility', () => {
+            const instance = getInstance();
+            const messages: Array<IMessage<string>> = [];
+            const channel = instance.create('myChannel');
+            channel.stream.subscribe((m) => messages.push(m));
+
+            channel.publish('Hello', 'myType');
+
+            expect(messages[0].type).toEqual('myType');
+            expect(messages[0].messageSource).toBeUndefined();
+            expect(messages[0].metadata).toBeUndefined();
+        });
+
+        it('should accept an interface as the metadata type', () => {
+            interface IUserMetadata {
+                user: string;
+            }
+            const instance = getInstance();
+            const messages: Array<IMessage<string>> = [];
+            const channel = instance.create('myChannel');
+            channel.stream.subscribe((m) => messages.push(m));
+
+            const options: IMessageOptions<'myType', IUserMetadata> = { type: 'myType', metadata: { user: 'bob' } };
+            channel.publish('Hello', options);
+            const message = instance.createMessage('myChannel', 'Hello', options);
+
+            expect(messages[0].metadata).toEqual({ user: 'bob' });
+            expect(message.metadata?.user).toEqual('bob');
+        });
+
+        it('should accept an options object with type, messageSource and typed metadata', () => {
+            const instance = getInstance();
+            const messages: Array<IMessage<string, string, string, { user: string }>> = [];
+            const hasUser = (m: IMessage<string>): m is IMessage<string, string, string, { user: string }> =>
+                typeof m.metadata?.user === 'string';
+            const channel = instance.create('myChannel');
+            channel.stream.pipe(filter(hasUser)).subscribe((m) => messages.push(m));
+
+            channel.publish('Hello', { type: 'myType', messageSource: ['a', 'b'], metadata: { user: 'bob' } });
+
+            expect(messages[0].type).toEqual('myType');
+            expect(messages[0].messageSource).toEqual(['a', 'b']);
+            expect(messages[0].metadata?.user).toEqual('bob');
+        });
+
+        it('should filter out messages whose metadata fails the predicate', () => {
+            const instance = getInstance();
+            const messages: IMessage<string>[] = [];
+            const hasUser = (m: IMessage<string>): m is IMessage<string, string, string, { user: string }> =>
+                typeof m.metadata?.user === 'string';
+            const channel = instance.create('myChannel');
+            channel.stream.pipe(filter(hasUser)).subscribe((m) => messages.push(m));
+
+            channel.publish('no metadata');
+            channel.publish('wrong shape', { metadata: { user: 1 } });
+
+            expect(messages).toEqual([]);
         });
     });
 
