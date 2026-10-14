@@ -3,10 +3,10 @@ import { v4 as uuid } from 'uuid';
 
 import {
     IMessageOptions,
-    MessageMetadata,
     IResponderRef,
     IResponseBroker,
     IResponseChannels,
+    MessageMetadata,
     ResponseHandler,
     ResponsePayload,
     ResponseReply,

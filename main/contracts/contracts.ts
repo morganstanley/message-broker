@@ -226,10 +226,7 @@ export type ResponseHandler<
     K extends keyof T,
     TType extends string = string,
     TMetadata extends object = MessageMetadata,
-> = (
-    message: ResponsePayload<T, K>,
-    options?: IMessageOptions<TType, TMetadata>,
-) => ResponseReply<T, K>;
+> = (message: ResponsePayload<T, K>, options?: IMessageOptions<TType, TMetadata>) => ResponseReply<T, K>;
 
 /***
  * Provides a reference to a responder.
@@ -303,7 +300,7 @@ export interface IAdapterError<T extends Record<string, any>> {
     /**
      * The message that failed to send
      */
-    message?: IMessage<any, Extract<keyof T, string>>;
+    message?: IMessage<any, Extract<keyof T, string>, string, any>;
 
     /**
      * The error that occurred

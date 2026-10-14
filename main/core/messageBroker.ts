@@ -37,7 +37,7 @@ export function messageBroker<T extends Record<string, any>>(): IMessageBroker<T
 @Injectable({ metadata: [] })
 export class MessageBroker<T extends Record<string, any> = Record<string, any>> implements IMessageBroker<T> {
     private channelLookup: ChannelModelLookup<T> = {};
-    private messagePublisher = new Subject<IMessage<any>>();
+    private messagePublisher = new Subject<IMessage<any, string, string, any>>();
     private adapters: Record<AdapterId, IMessageBrokerAdapter<T>> = {};
     private errorStream = new Subject<IAdapterError<T>>();
     private adapterSubscriptions: Record<string, Subscription> = {};
