@@ -1,5 +1,5 @@
 ---
-order: 4
+order: 5
 title: Response Broker
 ---
 
@@ -49,3 +49,22 @@ const responder = responseBroker.registerResponder('myResponseChannel', payload 
 // Later, when you no longer want to respond:
 responder.disconnect();
 ```
+
+### Passing message options to responders
+
+`collate` accepts an optional third argument of `IMessageOptions` (`type`, `messageSource` and `metadata`). It is passed to each responder as a second argument.
+
+```typescript
+responseBroker.registerResponder('myResponseChannel', (payload, options) => {
+    console.log(options?.type, options?.messageSource, options?.metadata);
+    return payload.data.length;
+});
+
+const results = responseBroker.collate(
+    'myResponseChannel',
+    { data: 'abcde' },
+    { type: 'lookup', messageSource: ['my-component'], metadata: { user: 'bob' } },
+);
+```
+
+`collate` and `ResponseHandler` accept `TType` and `TMetadata` generics so that `metadata` can be typed. See [Message Options](./message-options).

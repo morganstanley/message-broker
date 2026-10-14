@@ -1,5 +1,5 @@
 ---
-order: 5
+order: 6
 title: Adapters
 ---
 
@@ -53,6 +53,8 @@ export class WebSocketAdapter implements IMessageBrokerAdapter<IMyChannels> {
 
   // Note: sendMessage now receives the IMessage wrapper created by the broker
   // (the broker will call adapter.sendMessage(message)).
+  // The message includes the optional `messageSource` and `metadata` supplied when it was published,
+  // so they are sent to the external system if you serialise the whole message.
   async sendMessage(message: IMessage): Promise<void> {
     if (this.isConnected()) {
       // You can send the whole message or map it to the external system's shape
