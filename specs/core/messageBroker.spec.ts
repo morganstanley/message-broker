@@ -3,7 +3,7 @@ import { filter, map } from 'rxjs/operators';
 import { vi } from 'vitest';
 import { describe, expect, it } from 'vitest';
 
-import { IMessage, IMessageBrokerConfig } from '../../main/contracts/contracts.js';
+import { IMessage, IMessageBrokerConfig, IMessageOptions } from '../../main/contracts/contracts.js';
 import { MessageBroker, messageBroker } from '../../main/core/messageBroker.js';
 
 describe('MessageBroker', () => {
@@ -346,6 +346,23 @@ describe('MessageBroker', () => {
             expect(messages[0].type).toEqual('myType');
             expect(messages[0].messageSource).toBeUndefined();
             expect(messages[0].metadata).toBeUndefined();
+        });
+
+        it('should accept an interface as the metadata type', () => {
+            interface IUserMetadata {
+                user: string;
+            }
+            const instance = getInstance();
+            const messages: Array<IMessage<string>> = [];
+            const channel = instance.create('myChannel');
+            channel.stream.subscribe((m) => messages.push(m));
+
+            const options: IMessageOptions<'myType', IUserMetadata> = { type: 'myType', metadata: { user: 'bob' } };
+            channel.publish('Hello', options);
+            const message = instance.createMessage('myChannel', 'Hello', options);
+
+            expect(messages[0].metadata).toEqual({ user: 'bob' });
+            expect(message.metadata?.user).toEqual('bob');
         });
 
         it('should accept an options object with type, messageSource and typed metadata', () => {

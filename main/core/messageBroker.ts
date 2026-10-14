@@ -192,7 +192,10 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
             subscription = observable.subscribe();
         }
 
-        const publishFunction = (data?: T[K], typeOrOptions?: string | IMessageOptions): void => {
+        const publishFunction = <TType extends string = string, TMetadata extends object = MessageMetadata>(
+            data?: T[K],
+            typeOrOptions?: TType | IMessageOptions<TType, TMetadata>,
+        ): void => {
             const message = this.createMessage(channelName, data as T[K], typeOrOptions);
             this.messagePublisher.next(message);
             Object.entries(this.adapters).forEach(([id, adapter]) => {
@@ -230,7 +233,7 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
         K extends Extract<keyof T, string>,
         D = any,
         TType extends string = string,
-        TMetadata extends MessageMetadata = MessageMetadata,
+        TMetadata extends object = MessageMetadata,
     >(
         channelName: K,
         data: D,

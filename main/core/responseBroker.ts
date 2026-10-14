@@ -3,6 +3,7 @@ import { v4 as uuid } from 'uuid';
 
 import {
     IMessageOptions,
+    MessageMetadata,
     IResponderRef,
     IResponseBroker,
     IResponseChannels,
@@ -12,7 +13,7 @@ import {
 } from '../contracts/contracts.js';
 
 interface IResponderRefInternal extends IResponderRef {
-    execute: (payload: any, options?: IMessageOptions) => any;
+    execute: (payload: any, options?: IMessageOptions<any, any>) => any;
 }
 
 type ResponderLookup<T extends IResponseChannels> = { [P in keyof T]?: IResponderRefInternal[] };
@@ -24,10 +25,10 @@ type ResponderLookup<T extends IResponseChannels> = { [P in keyof T]?: IResponde
 export class ResponseBroker<T extends IResponseChannels> implements IResponseBroker<T> {
     private responders: ResponderLookup<T> = {};
 
-    public collate<K extends keyof T>(
+    public collate<K extends keyof T, TType extends string = string, TMetadata extends object = MessageMetadata>(
         channelName: K,
         payload: ResponsePayload<T, K>,
-        options?: IMessageOptions,
+        options?: IMessageOptions<TType, TMetadata>,
     ): ResponseReply<T, K>[] {
         // call the execute function for every responder with the "payload" and optional "options"
         return this.responders[channelName]?.map((r) => r.execute(payload, options)) ?? [];

@@ -13,7 +13,7 @@ export function isCacheSizeEqual(
 /**
  * Normalises the `typeOrOptions` argument, which may be a message type string or an options object.
  */
-export function toMessageOptions<TType extends string, TMetadata extends MessageMetadata>(
+export function toMessageOptions<TType extends string, TMetadata extends object>(
     typeOrOptions: TType | IMessageOptions<TType, TMetadata> | undefined,
 ): IMessageOptions<TType, TMetadata> {
     return typeof typeOrOptions === 'string' ? { type: typeOrOptions } : (typeOrOptions ?? {});

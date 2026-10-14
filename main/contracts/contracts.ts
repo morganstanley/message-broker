@@ -8,7 +8,7 @@ export type MessageMetadata = Record<string, unknown>;
 /**
  * Optional additional information that can be supplied when publishing a message.
  */
-export interface IMessageOptions<TType extends string = string, TMetadata extends MessageMetadata = MessageMetadata> {
+export interface IMessageOptions<TType extends string = string, TMetadata extends object = MessageMetadata> {
     /**
      * The message type which can be leveraged for more granular control.
      */
@@ -31,7 +31,10 @@ export interface IChannel<TData = any, TChannel extends string = string> {
      * Publish a payload to subscribers. The second argument can either be a message type (string) or an options
      * object which can specify the type, messageSource and metadata.
      */
-    publish: (data?: TData, typeOrOptions?: string | IMessageOptions) => void;
+    publish: <TType extends string = string, TMetadata extends object = MessageMetadata>(
+        data?: TData,
+        typeOrOptions?: TType | IMessageOptions<TType, TMetadata>,
+    ) => void;
     /**
      * Observable to subscribe to messages published onto this channel
      */
@@ -58,7 +61,7 @@ export interface IMessage<
     TData = any,
     TChannel extends string = string,
     TType extends string = string,
-    TMetadata extends MessageMetadata = MessageMetadata,
+    TMetadata extends object = MessageMetadata,
 > {
     /**
      * The name of the channel that the message is published on.
@@ -107,10 +110,10 @@ export interface IResponseBroker<T extends IResponseChannels> {
      * @param payload
      * @param options optional type, messageSource and metadata which are passed to each responder
      */
-    collate<K extends keyof T>(
+    collate<K extends keyof T, TType extends string = string, TMetadata extends object = MessageMetadata>(
         channelName: K,
         payload: ResponsePayload<T, K>,
-        options?: IMessageOptions,
+        options?: IMessageOptions<TType, TMetadata>,
     ): ResponseReply<T, K>[];
 }
 
@@ -176,7 +179,7 @@ export interface IMessageBroker<T extends Record<string, any> = Record<string, a
         K extends Extract<keyof T, string>,
         D = any,
         TType extends string = string,
-        TMetadata extends MessageMetadata = MessageMetadata,
+        TMetadata extends object = MessageMetadata,
     >(
         channelName: K,
         data: D,
@@ -218,9 +221,14 @@ export type ResponseReply<T extends IResponseChannels, K extends keyof T> = T[K]
  * RSVPHandler type as defined in RSVP property that can provided to the messageBroker on creation. This enforces the arguments and the return types
  * of the RSVP handler function.
  */
-export type ResponseHandler<T extends IResponseChannels, K extends keyof T> = (
+export type ResponseHandler<
+    T extends IResponseChannels,
+    K extends keyof T,
+    TType extends string = string,
+    TMetadata extends object = MessageMetadata,
+> = (
     message: ResponsePayload<T, K>,
-    options?: IMessageOptions,
+    options?: IMessageOptions<TType, TMetadata>,
 ) => ResponseReply<T, K>;
 
 /***
@@ -258,7 +266,13 @@ export interface IMessageBrokerAdapter<T extends Record<string, any> = Record<st
      * Send a message to the external system
      * Returns a promise that resolves when message is sent
      */
-    sendMessage<TChannel extends Extract<keyof T, string>>(message: IMessage<T[TChannel], TChannel>): Promise<void>;
+    sendMessage<
+        TChannel extends Extract<keyof T, string>,
+        TType extends string = string,
+        TMetadata extends object = MessageMetadata,
+    >(
+        message: IMessage<T[TChannel], TChannel, TType, TMetadata>,
+    ): Promise<void>;
 
     /**
      * Get all messages from the external system
