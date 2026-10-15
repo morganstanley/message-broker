@@ -380,7 +380,7 @@ describe('MessageBroker', () => {
             const instance = getInstance();
             const messages: Array<IMessage<string, string, string, { user: string }>> = [];
             const hasUser = (m: IMessage<string>): m is IMessage<string, string, string, { user: string }> =>
-                typeof m.metadata?.user === 'string';
+                m.metadata != null && 'user' in m.metadata && typeof m.metadata.user === 'string';
             const channel = instance.create('myChannel');
             channel.stream.pipe(filter(hasUser)).subscribe((m) => messages.push(m));
 
@@ -395,7 +395,7 @@ describe('MessageBroker', () => {
             const instance = getInstance();
             const messages: IMessage<string>[] = [];
             const hasUser = (m: IMessage<string>): m is IMessage<string, string, string, { user: string }> =>
-                typeof m.metadata?.user === 'string';
+                m.metadata != null && 'user' in m.metadata && typeof m.metadata.user === 'string';
             const channel = instance.create('myChannel');
             channel.stream.pipe(filter(hasUser)).subscribe((m) => messages.push(m));
 

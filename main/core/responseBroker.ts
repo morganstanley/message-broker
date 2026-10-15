@@ -6,7 +6,6 @@ import {
     IResponderRef,
     IResponseBroker,
     IResponseChannels,
-    MessageMetadata,
     ResponseHandler,
     ResponsePayload,
     ResponseReply,
@@ -25,7 +24,7 @@ type ResponderLookup<T extends IResponseChannels> = { [P in keyof T]?: IResponde
 export class ResponseBroker<T extends IResponseChannels> implements IResponseBroker<T> {
     private responders: ResponderLookup<T> = {};
 
-    public collate<K extends keyof T, TType extends string = string, TMetadata extends object = MessageMetadata>(
+    public collate<K extends keyof T, TType extends string = string, TMetadata extends object = object>(
         channelName: K,
         payload: ResponsePayload<T, K>,
         options?: IMessageOptions<TType, TMetadata>,

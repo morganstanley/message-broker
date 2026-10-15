@@ -39,7 +39,7 @@ channel.stream.subscribe(message => {
 
 ## Typing metadata
 
-`IMessageOptions`, `IMessage` and `createMessage` take `TType` and `TMetadata` generics. `publish`, `collate`, `ResponseHandler` and `IAdapter.sendMessage` accept the same generics. `TMetadata` can be any `object` type, so both type aliases and interfaces can be used. It defaults to `MessageMetadata` (`Record<string, unknown>`).
+`IMessageOptions`, `IMessage` and `createMessage` take `TType` and `TMetadata` generics. `publish`, `collate`, `ResponseHandler` and `IAdapter.sendMessage` accept the same generics. `TMetadata` can be any `object` type, so both type aliases and interfaces can be used. It defaults to `object`, allowing plain `IMessage` and `IMessageOptions` to accept metadata interfaces without a string index signature. Narrow metadata before accessing its properties, or supply an explicit metadata type.
 
 ```typescript
 interface IUserMetadata {
@@ -60,7 +60,7 @@ message.metadata?.user; // string
 
 ```typescript
 const isUserMessage = (m: IMessage): m is IMessage<string, string, string, IUserMetadata> =>
-  typeof m.metadata?.user === 'string';
+  m.metadata != null && 'user' in m.metadata && typeof m.metadata.user === 'string';
 
 channel.stream.pipe(filter(isUserMessage)).subscribe(m => console.log(m.metadata?.user));
 ```

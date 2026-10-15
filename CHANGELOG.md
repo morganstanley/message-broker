@@ -8,7 +8,7 @@ The format is based on Keep a Changelog and this project follows [Semantic Versi
 
 ### Added
 
-- `IMessage` now has optional `messageSource` (`string[]`) and `metadata` properties. `metadata` is free-form and is not interpreted by the message broker. `IMessage`, `IMessageOptions` and `createMessage` accept a `TMetadata extends object` generic (defaults to `Record<string, unknown>`), so interfaces can be used as well as type aliases. `publish`, `collate`, `ResponseHandler` and `IAdapter.sendMessage` accept the same `TType`/`TMetadata` generics
+- `IMessage` now has optional `messageSource` (`string[]`) and `metadata` properties. `metadata` is free-form and is not interpreted by the message broker. `IMessage`, `IMessageOptions` and `createMessage` accept a `TMetadata extends object` generic (defaults to `object`), so interfaces can be used as well as type aliases without a string index signature. Narrow `metadata` before accessing its properties, or supply an explicit metadata type. `publish`, `collate`, `ResponseHandler` and `IAdapter.sendMessage` accept the same `TType`/`TMetadata` generics
 - added `IMessageOptions` (`type`, `messageSource`, `metadata`)
 - `publish` and `createMessage` now accept either a message type string (as before) or an `IMessageOptions` object:
 
