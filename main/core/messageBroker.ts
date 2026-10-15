@@ -12,7 +12,6 @@ import {
     IMessageBrokerAdapter,
     IMessageBrokerConfig,
     IMessageOptions,
-    MessageMetadata,
     RequiredPick,
 } from '../contracts/contracts.js';
 import { isCacheSizeEqual, toMessageOptions } from '../functions/helper.functions.js';
@@ -192,7 +191,7 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
             subscription = observable.subscribe();
         }
 
-        const publishFunction = <TType extends string = string, TMetadata extends object = MessageMetadata>(
+        const publishFunction = <TType extends string = string, TMetadata extends object = object>(
             data?: T[K],
             typeOrOptions?: TType | IMessageOptions<TType, TMetadata>,
         ): void => {
@@ -233,7 +232,7 @@ export class MessageBroker<T extends Record<string, any> = Record<string, any>> 
         K extends Extract<keyof T, string>,
         D = any,
         TType extends string = string,
-        TMetadata extends object = MessageMetadata,
+        TMetadata extends object = object,
     >(
         channelName: K,
         data: D,
